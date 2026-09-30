@@ -2,7 +2,7 @@
 
 All notable changes to the BreachSpider MCP server. This project follows [Semantic Versioning](https://semver.org/).
 
-## 0.1.1 (unreleased)
+## 0.1.1 (2026-10-01)
 
 ### Changed
 - `lookup_cve` reports a CVE's fix status as `varies_by_product` when the vendor's advisory states fixed versions
