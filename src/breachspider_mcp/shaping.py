@@ -239,6 +239,21 @@ def asset_result(r: Dict[str, Any], filtered: bool) -> Dict[str, Any]:
 
 # ---------------------------------------------------------------- CVE record
 
+VARIES_BY_PRODUCT_NOTE = ("Fixed versions differ by product. Use correlate_devices with the device's vendor, product "
+                          "and version for the exact fix that applies to it.")
+SINGLE_PRODUCT_NOTE = "Fixed in {version} for {product}; use correlate_devices to confirm for your product."
+
+
+def _fix_note(patch: Dict[str, Any]) -> Optional[str]:
+    # The API's note names its REST endpoint; agents call the correlate_devices tool instead.
+    if patch.get("status") == "varies_by_product":
+        one = patch.get("fixed_in") or {}
+        if one.get("product") and one.get("version"):
+            return SINGLE_PRODUCT_NOTE.format(product=cap(one["product"], 120), version=cap(one["version"], 40))
+        return VARIES_BY_PRODUCT_NOTE
+    return cap(patch.get("note"))
+
+
 def cve_record(d: Dict[str, Any]) -> Dict[str, Any]:
     scoring = d.get("scoring") or {}
     cvss = scoring.get("cvss") or {}
@@ -263,7 +278,7 @@ def cve_record(d: Dict[str, Any]) -> Dict[str, Any]:
         "cwes": [f"CWE-{c.get('id')}" for c in cls.get("cwes") or [] if c.get("id") is not None],
         "fix": _drop_empty({"status": patch.get("status"), "available": patch.get("patch_available"),
                             "version": patch.get("patch_version"), "url": patch.get("patch_url"),
-                            "notes": cap(patch.get("patch_notes"))}),
+                            "notes": cap(patch.get("patch_notes")), "note": _fix_note(patch)}),
         "published": temporal.get("published_at"),
         "modified": temporal.get("modified_at"),
         "vendor_advisories": [_drop_empty({"url": a.get("url"), "title": cap(a.get("title"), 120),

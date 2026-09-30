@@ -175,6 +175,35 @@ def test_lookup_cve(keyed_server, mocked):
     assert "sage" not in json.dumps(out)
 
 
+def test_lookup_cve_fix_varies_by_product(keyed_server, mocked):
+    rec = fixture("cve_2024_9137.json")
+    rec["data"]["patch"].update(status="varies_by_product", note="Fixed versions differ by product. For the fix ...")
+    mocked.add(responses.GET, f"{BASE}/api/v1/cves/CVE-2024-9137", json=rec)
+    err, out = call(keyed_server, "lookup_cve", {"cve_id": "CVE-2024-9137"})
+    assert not err
+    assert out["fix"]["status"] == "varies_by_product"
+    assert "correlate_devices" in out["fix"]["note"] and "/api/v1" not in out["fix"]["note"]
+
+
+def test_lookup_cve_fix_single_product(keyed_server, mocked):
+    rec = fixture("cve_2024_9137.json")
+    rec["data"]["patch"].update(status="varies_by_product", note="Fixed in 11.36.46 for Commvault Web Server. ...",
+                                fixed_in={"product": "Commvault Web Server", "version": "11.36.46"})
+    mocked.add(responses.GET, f"{BASE}/api/v1/cves/CVE-2024-9137", json=rec)
+    _, out = call(keyed_server, "lookup_cve", {"cve_id": "CVE-2024-9137"})
+    assert out["fix"]["status"] == "varies_by_product"
+    assert out["fix"]["note"] == ("Fixed in 11.36.46 for Commvault Web Server; use correlate_devices to confirm for "
+                                  "your product.")
+
+
+def test_lookup_cve_fix_unknown_has_no_note(keyed_server, mocked):
+    rec = fixture("cve_2024_9137.json")
+    rec["data"]["patch"].update(status="unknown", note=None)
+    mocked.add(responses.GET, f"{BASE}/api/v1/cves/CVE-2024-9137", json=rec)
+    _, out = call(keyed_server, "lookup_cve", {"cve_id": "CVE-2024-9137"})
+    assert out["fix"]["status"] == "unknown" and "note" not in out["fix"]
+
+
 def test_lookup_cve_rejects_non_ids(keyed_server, mocked):
     err, msg = call(keyed_server, "lookup_cve", {"cve_id": "../assets"})
     assert err and "not a CVE id" in msg
