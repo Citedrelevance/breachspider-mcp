@@ -1,0 +1,1775 @@
+{
+ "api": {
+  "version": "1.0.0",
+  "request_id": "bs-req-491a9fcb00e1",
+  "timestamp": "2026-09-30T20:19:11.480608Z",
+  "processing_ms": 1276
+ },
+ "data": {
+  "results": [
+   {
+    "asset_id": "s",
+    "submitted": {
+     "vendor": "Siemens",
+     "product": "SIMATIC S7-1500",
+     "version": "2.0",
+     "firmware_version": null,
+     "product_type": null
+    },
+    "resolution": {
+     "status": "resolved",
+     "coverage": "partial",
+     "confidence": 94,
+     "confidence_band": "HIGH",
+     "vendor": {
+      "id": 110,
+      "name": "Siemens",
+      "slug": "siemens"
+     },
+     "product": {
+      "id": 27363,
+      "name": "Simatic S7-1500",
+      "slug": "siemens_simatic_s7-1500"
+     },
+     "cpe": {
+      "vendor": "siemens",
+      "product": "simatic_s7-1500_firmware"
+     },
+     "match_basis": [
+      "cpe_alias",
+      "exact",
+      "prefix",
+      "substring",
+      "token",
+      "version:in_range"
+     ]
+    },
+    "candidates": [],
+    "cves": [
+     {
+      "cve_id": "CVE-2018-3639",
+      "bsid": "BS-2018-GLOBAL-219964-M",
+      "title": "Systems with microprocessors utilizing speculative execution and speculative execution of memory reads before the addres",
+      "description": "Systems with microprocessors utilizing speculative execution and speculative execution of memory reads before the addresses of all prior memory writes are known may allow unauthorized disclosure of information to an attacker with local user access via a side-channel analysis, aka Speculative Store Bypass (SSB), Variant 4.",
+      "scoring": {
+       "cvss": {
+        "score": 5.5,
+        "vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
+        "version": "3.1",
+        "severity": "MEDIUM",
+        "attack_vector": "LOCAL",
+        "attack_complexity": "LOW",
+        "privileges_required": "LOW",
+        "user_interaction": "NONE",
+        "scope": "UNCHANGED",
+        "confidentiality_impact": "HIGH",
+        "integrity_impact": "NONE",
+        "availability_impact": "NONE"
+       },
+       "epss": {
+        "score": 0.60631,
+        "percentile": 0.9912,
+        "interpretation": "Top 5% most likely to be exploited"
+       },
+       "bcs": {
+        "score": 7.25,
+        "tier": "HIGH",
+        "factors": {
+         "kev_flagged": false,
+         "poc_available": true,
+         "has_public_exploit": true,
+         "patch_available": false,
+         "ics_relevance": 0.85
+        }
+       }
+      },
+      "exploitation": {
+       "kev_flagged": false,
+       "kev_added_at": null,
+       "has_public_exploit": true,
+       "poc_available": true,
+       "exploit_maturity": "FUNCTIONAL",
+       "actively_exploited": false
+      },
+      "affected": {
+       "vendors": [
+        "Arm",
+        "Canonical",
+        "Debian",
+        "Intel",
+        "Microsoft",
+        "Mitel",
+        "Nvidia",
+        "Oracle",
+        "Redhat",
+        "Schneider-Electric",
+        "Siemens",
+        "Sonicwall"
+       ],
+       "products": [],
+       "primary_vendor": null,
+       "primary_product": null,
+       "vendor_count": 12,
+       "device_types": [
+        "Programmable Logic Controller"
+       ],
+       "protocols": [],
+       "ics_relevance_score": 0.85,
+       "ics_relevant": true
+      },
+      "patch": {
+       "status": "unknown",
+       "patch_available": false,
+       "patch_version": null,
+       "patch_url": null,
+       "patch_notes": null
+      },
+      "classification": {
+       "cwes": [
+        {
+         "id": 203,
+         "url": "https://cwe.mitre.org/data/definitions/203.html"
+        }
+       ],
+       "attack_vector": "LOCAL",
+       "attack_complexity": "LOW",
+       "privileges_required": "LOW",
+       "user_interaction": "NONE",
+       "scope": "UNCHANGED",
+       "layer": null,
+       "category": null
+      },
+      "sage": {
+       "model": "SAGE-v1",
+       "tier": "full",
+       "executive_summary": "This vulnerability was disclosed in 2018. A medium severity vulnerability affects Arm systems (CVE-2018-3639). Public exploit code is available. Industrial control systems may be affected. Isolate affected systems if patching is not feasible.",
+       "ics_context": null,
+       "remediation_guidance": null,
+       "confidence_score": null,
+       "confidence_tier": null,
+       "_upgrade_required": false,
+       "_upgrade_url": null
+      },
+      "temporal": {
+       "published_at": "2018-05-22T12:29:00+00:00",
+       "modified_at": "2026-06-17T01:57:35+00:00",
+       "enriched_at": "2026-05-22T15:38:08.915262+00:00",
+       "kev_added_at": null
+      },
+      "references": {
+       "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2018-3639",
+       "cisa_url": null,
+       "breachspider_url": "https://breachspider.com/ics-cve/CVE-2018-3639",
+       "vendor_advisories": [],
+       "cited_exclusive": null,
+       "cve_org_url": "https://www.cve.org/CVERecord?id=CVE-2018-3639",
+       "cisa_ics_advisories": [],
+       "other_references": [
+        {
+         "url": "http://lists.opensuse.org/opensuse-security-announce/2019-05/msg00058.html",
+         "tags": [
+          "Broken Link"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "http://lists.opensuse.org/opensuse-security-announce/2019-05/msg00059.html",
+         "tags": [
+          "Broken Link"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "http://lists.opensuse.org/opensuse-security-announce/2020-09/msg00007.html",
+         "tags": [
+          "Broken Link"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "http://support.lenovo.com/us/en/solutions/LEN-22133",
+         "tags": [
+          "Third Party Advisory"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "http://www.fujitsu.com/global/support/products/software/security/products-f/cve-2018-3639e.html",
+         "tags": [
+          "Third Party Advisory"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "http://www.openwall.com/lists/oss-security/2020/06/10/1",
+         "tags": [
+          "Mailing List",
+          "Third Party Advisory"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "http://www.openwall.com/lists/oss-security/2020/06/10/2",
+         "tags": [
+          "Mailing List",
+          "Third Party Advisory"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "http://www.openwall.com/lists/oss-security/2020/06/10/5",
+         "tags": [
+          "Mailing List",
+          "Third Party Advisory"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "http://www.securityfocus.com/bid/104232",
+         "tags": [
+          "Third Party Advisory",
+          "VDB Entry"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "http://www.securitytracker.com/id/1040949",
+         "tags": [
+          "Third Party Advisory",
+          "VDB Entry"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "http://www.securitytracker.com/id/1042004",
+         "tags": [
+          "Third Party Advisory",
+          "VDB Entry"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "http://xenbits.xen.org/xsa/advisory-263.html",
+         "tags": [
+          "Third Party Advisory"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "https://access.redhat.com/errata/RHSA-2018:1629",
+         "tags": [
+          "Third Party Advisory"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "https://access.redhat.com/errata/RHSA-2018:1630",
+         "tags": [
+          "Third Party Advisory"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "https://access.redhat.com/errata/RHSA-2018:1632",
+         "tags": [
+          "Third Party Advisory"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "https://access.redhat.com/errata/RHSA-2018:1633",
+         "tags": [
+          "Third Party Advisory"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "https://access.redhat.com/errata/RHSA-2018:1635",
+         "tags": [
+          "Third Party Advisory"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "https://access.redhat.com/errata/RHSA-2018:1636",
+         "tags": [
+          "Third Party Advisory"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "https://access.redhat.com/errata/RHSA-2018:1637",
+         "tags": [
+          "Third Party Advisory"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "https://access.redhat.com/errata/RHSA-2018:1638",
+         "tags": [
+          "Third Party Advisory"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "https://access.redhat.com/errata/RHSA-2018:1639",
+         "tags": [
+          "Third Party Advisory"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "https://access.redhat.com/errata/RHSA-2018:1640",
+         "tags": [
+          "Third Party Advisory"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "https://access.redhat.com/errata/RHSA-2018:1641",
+         "tags": [
+          "Third Party Advisory"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "https://access.redhat.com/errata/RHSA-2018:1642",
+         "tags": [
+          "Third Party Advisory"
+         ],
+         "provided_by": "secure@intel.com"
+        },
+        {
+         "url": "https://access.redhat.com/errata/RHSA-2018:1643",
+         "tags": [
+          "Third Party Advisory"
+         ],
+         "provided_by": "secure@intel.com"
+        }
+       ],
+       "other_references_total": 147
+      },
+      "_links": {
+       "self": "/api/v1/cves/CVE-2018-3639",
+       "pdf": "/api/v1/ics-cve/CVE-2018-3639/pdf",
+       "html": "https://breachspider.com/ics-cve/CVE-2018-3639"
+      },
+      "match_tier": "RANGE",
+      "affected_range": {
+       "cpe_version": "*",
+       "is_range": true,
+       "version_start": null,
+       "version_start_inclusive": null,
+       "version_end": "2.6",
+       "version_end_inclusive": false,
+       "source": null
+      },
+      "priority_rank": 1,
+      "priority_reason": "confirmed (affected up to 2.6), public exploit available, fix: upgrade to 2.6 or later (derived)",
+      "fix": {
+       "available": true,
+       "action": "upgrade to 2.6 or later",
+       "source": "derived",
+       "derived": true
+      },
+      "advisory_guidance": []
+     },
+     {
+      "cve_id": "CVE-2018-16558",
+      "bsid": "BS-2019-GLOBAL-193821-H",
+      "title": "A vulnerability has been identified in SIMATIC S7-1500 CPU (All versions >= V2.0 and < V2.5), SIMATIC S7-1500 CPU (All v",
+      "description": "A vulnerability has been identified in SIMATIC S7-1500 CPU (All versions >= V2.0 and < V2.5), SIMATIC S7-1500 CPU (All versions <= V1.8.5). Specially crafted network packets sent to port 80/tcp or 443/tcp could allow an unauthenticated remote attacker to cause a Denial-of-Service condition of the device. The security vulnerability could be exploited by an attacker with network access to the affected systems on port 80/tcp or 443/tcp. Successful exploitation requires no system privileges and no user interaction. An attacker could use the vulnerability to compromise availability of the device. At the time of advisory publication no public exploitation of this security vulnerability was known.",
+      "scoring": {
+       "cvss": {
+        "score": 7.5,
+        "vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+        "version": "3.0",
+        "severity": "HIGH",
+        "attack_vector": "NETWORK",
+        "attack_complexity": "LOW",
+        "privileges_required": "NONE",
+        "user_interaction": "NONE",
+        "scope": "UNCHANGED",
+        "confidentiality_impact": "NONE",
+        "integrity_impact": "NONE",
+        "availability_impact": "HIGH"
+       },
+       "epss": {
+        "score": 0.01986,
+        "percentile": 0.79788,
+        "interpretation": "Top 25% most likely to be exploited"
+       },
+       "bcs": {
+        "score": 6.57,
+        "tier": "MEDIUM",
+        "factors": {
+         "kev_flagged": false,
+         "poc_available": false,
+         "has_public_exploit": false,
+         "patch_available": false,
+         "ics_relevance": 0.85
+        }
+       }
+      },
+      "exploitation": {
+       "kev_flagged": false,
+       "kev_added_at": null,
+       "has_public_exploit": false,
+       "poc_available": false,
+       "exploit_maturity": "NONE",
+       "actively_exploited": false
+      },
+      "affected": {
+       "vendors": [
+        "Siemens"
+       ],
+       "products": [],
+       "primary_vendor": null,
+       "primary_product": null,
+       "vendor_count": 1,
+       "device_types": [
+        "Programmable Logic Controller"
+       ],
+       "protocols": [],
+       "ics_relevance_score": 0.85,
+       "ics_relevant": true
+      },
+      "patch": {
+       "status": "unknown",
+       "patch_available": false,
+       "patch_version": null,
+       "patch_url": "https://cert-portal.siemens.com/productcert/pdf/ssa-180635.pdf",
+       "patch_notes": null
+      },
+      "classification": {
+       "cwes": [
+        {
+         "id": 20,
+         "url": "https://cwe.mitre.org/data/definitions/20.html"
+        }
+       ],
+       "attack_vector": "NETWORK",
+       "attack_complexity": "LOW",
+       "privileges_required": "NONE",
+       "user_interaction": "NONE",
+       "scope": "UNCHANGED",
+       "layer": null,
+       "category": null
+      },
+      "sage": {
+       "model": "SAGE-v1",
+       "tier": "full",
+       "executive_summary": "A Denial-of-Service (DoS) vulnerability exists in Siemens SIMATIC S7-1500 CPUs, affecting all versions from V2.0 to V2.5 and versions up to V1.8.5. This vulnerability can be exploited by sending specially crafted network packets to ports 80/tcp or 443/tcp, leading to a DoS condition. The vulnerability does not require authentication or user interaction and can be exploited remotely.",
+       "ics_context": null,
+       "remediation_guidance": null,
+       "confidence_score": null,
+       "confidence_tier": null,
+       "_upgrade_required": false,
+       "_upgrade_url": null
+      },
+      "temporal": {
+       "published_at": "2019-04-17T14:29:03+00:00",
+       "modified_at": "2026-06-17T01:44:29+00:00",
+       "enriched_at": "2026-05-22T15:37:59.656618+00:00",
+       "kev_added_at": null
+      },
+      "references": {
+       "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2018-16558",
+       "cisa_url": null,
+       "breachspider_url": "https://breachspider.com/ics-cve/CVE-2018-16558",
+       "vendor_advisories": [
+        {
+         "url": "https://cert-portal.siemens.com/productcert/pdf/ssa-180635.pdf",
+         "title": null,
+         "source": "nvd_vendor_advisory"
+        },
+        {
+         "url": "https://cert-portal.siemens.com/productcert/html/ssa-180635.html",
+         "title": "SSA-180635: Denial-of-Service Vulnerabilities in SIMATIC S7-1500 CPU Family - HTML Version",
+         "source": "cisa_csaf_vendor_reference"
+        }
+       ],
+       "cited_exclusive": null,
+       "cve_org_url": "https://www.cve.org/CVERecord?id=CVE-2018-16558",
+       "cisa_ics_advisories": [
+        {
+         "advisory_id": "ICSA-19-036-04",
+         "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-19-036-04",
+         "title": "Siemens SIMATIC S7-1500 CPU",
+         "published": "2019-01-08"
+        }
+       ],
+       "other_references": [],
+       "other_references_total": 0
+      },
+      "_links": {
+       "self": "/api/v1/cves/CVE-2018-16558",
+       "pdf": "/api/v1/ics-cve/CVE-2018-16558/pdf",
+       "html": "https://breachspider.com/ics-cve/CVE-2018-16558"
+      },
+      "match_tier": "RANGE",
+      "affected_range": {
+       "cpe_version": "*",
+       "is_range": true,
+       "version_start": "2.0",
+       "version_start_inclusive": true,
+       "version_end": "2.5",
+       "version_end_inclusive": false,
+       "source": null
+      },
+      "priority_rank": 2,
+      "priority_reason": "confirmed (affected 2.0 to 2.5), fix: upgrade to 2.5 or later (derived)",
+      "fix": {
+       "available": true,
+       "action": "upgrade to 2.5 or later",
+       "source": "derived",
+       "derived": true
+      },
+      "advisory_guidance": [
+       {
+        "category": "vendor_fix",
+        "details": "Update to V2.5 or newer https://support.industry.siemens.com/cs/de/en/view/109478459",
+        "details_truncated": false,
+        "fixed_versions": null,
+        "url": null,
+        "source_document": "ICSA-19-036-04",
+        "source_url": "https://cert-portal.siemens.com/productcert/html/ssa-180635.html"
+       },
+       {
+        "category": "vendor_fix",
+        "details": "Update to V2.5 or higher or when this is not possible (because of Hardware restrictions)",
+        "details_truncated": false,
+        "fixed_versions": null,
+        "url": null,
+        "source_document": "ICSA-19-036-04",
+        "source_url": "https://cert-portal.siemens.com/productcert/html/ssa-180635.html"
+       },
+       {
+        "category": "mitigation",
+        "details": "Protect network access to port 80/tcp and port 443/tcp of affected devices.",
+        "details_truncated": false,
+        "fixed_versions": null,
+        "url": null,
+        "source_document": "ICSA-19-036-04",
+        "source_url": "https://cert-portal.siemens.com/productcert/html/ssa-180635.html"
+       },
+       {
+        "category": "mitigation",
+        "details": "Apply cell protection concept",
+        "details_truncated": false,
+        "fixed_versions": null,
+        "url": null,
+        "source_document": "ICSA-19-036-04",
+        "source_url": "https://cert-portal.siemens.com/productcert/html/ssa-180635.html"
+       }
+      ]
+     }
+    ],
+    "cves_page": {
+     "page": 1,
+     "page_size": 2,
+     "total": 11,
+     "total_unfiltered": 11,
+     "has_more": true
+    },
+    "fix_groups": [
+     {
+      "fix": "upgrade to 2.6 or later",
+      "fix_type": "version",
+      "source": "derived",
+      "derived": true,
+      "cve_ids": [
+       "CVE-2018-3639",
+       "CVE-2018-13815"
+      ],
+      "counts": {
+       "total": 2,
+       "confirmed": 2,
+       "known_exploited": 0,
+       "exploit_available": 1
+      },
+      "highest_score": {
+       "bcs": 7.25,
+       "cvss": 7.5
+      },
+      "group_rank": 1
+     },
+     {
+      "fix": "upgrade to 2.5 or later",
+      "fix_type": "version",
+      "source": "derived",
+      "derived": true,
+      "cve_ids": [
+       "CVE-2018-16558",
+       "CVE-2018-16559",
+       "CVE-2018-13805"
+      ],
+      "counts": {
+       "total": 3,
+       "confirmed": 3,
+       "known_exploited": 0,
+       "exploit_available": 0
+      },
+      "highest_score": {
+       "bcs": 6.57,
+       "cvss": 7.5
+      },
+      "group_rank": 2
+     },
+     {
+      "fix": "upgrade beyond 2.5",
+      "fix_type": "version",
+      "source": "derived",
+      "derived": true,
+      "cve_ids": [
+       "CVE-2019-6575"
+      ],
+      "counts": {
+       "total": 1,
+       "confirmed": 1,
+       "known_exploited": 0,
+       "exploit_available": 0
+      },
+      "highest_score": {
+       "bcs": 6.57,
+       "cvss": 7.5
+      },
+      "group_rank": 3
+     },
+     {
+      "fix": "upgrade to 2.6.1 or later",
+      "fix_type": "version",
+      "source": "derived",
+      "derived": true,
+      "cve_ids": [
+       "CVE-2019-6568"
+      ],
+      "counts": {
+       "total": 1,
+       "confirmed": 1,
+       "known_exploited": 0,
+       "exploit_available": 0
+      },
+      "highest_score": {
+       "bcs": 6.23,
+       "cvss": 7.5
+      },
+      "group_rank": 4
+     },
+     {
+      "fix": "upgrade to 2.1 or later",
+      "fix_type": "version",
+      "source": "derived",
+      "derived": true,
+      "cve_ids": [
+       "CVE-2017-2680",
+       "CVE-2017-2681"
+      ],
+      "counts": {
+       "total": 2,
+       "confirmed": 2,
+       "known_exploited": 0,
+       "exploit_available": 0
+      },
+      "highest_score": {
+       "bcs": 6.1,
+       "cvss": 6.5
+      },
+      "group_rank": 5
+     },
+     {
+      "fix": "no fix known",
+      "fix_type": "none",
+      "source": null,
+      "derived": false,
+      "cve_ids": [
+       "CVE-2020-8744",
+       "CVE-2019-10929"
+      ],
+      "counts": {
+       "total": 2,
+       "confirmed": 0,
+       "known_exploited": 0,
+       "exploit_available": 0
+      },
+      "highest_score": {
+       "bcs": 5.91,
+       "cvss": 7.8
+      },
+      "group_rank": 6
+     }
+    ],
+    "fix_plan": {
+     "to_clear_known_exploited": null,
+     "to_clear_all_fixable": {
+      "fix": "upgrade to 2.6.1 or later",
+      "derived": true,
+      "source": "derived",
+      "clears": {
+       "cves": 9,
+       "known_exploited": 0,
+       "groups": 5
+      },
+      "note": "Derived from affected version ranges, not from a vendor fix statement. Confirm the target release in the vendor's advisory: that release may not exist in this product line."
+     }
+    },
+    "needs_review": true,
+    "correlated_at": "2026-09-30T20:19:11.267612+00:00",
+    "result_hash": "sha256:b097e1dd10b8615f33e053a82a59de7bb1b9a19d17f5ab551b2f22478a2a2447",
+    "warnings": [
+     {
+      "code": "PRODUCT_WIDE_MATCH",
+      "message": "One or more CVEs apply to the product with no version bound (product-wide)."
+     }
+    ]
+   },
+   {
+    "asset_id": "x",
+    "submitted": {
+     "vendor": "Acme",
+     "product": "Nothing 9000",
+     "version": "1",
+     "firmware_version": null,
+     "product_type": null
+    },
+    "resolution": {
+     "status": "unresolved",
+     "coverage": null,
+     "confidence": 0,
+     "confidence_band": "LOW",
+     "vendor": null,
+     "product": null,
+     "cpe": null,
+     "match_basis": []
+    },
+    "candidates": [],
+    "cves": [],
+    "cves_page": null,
+    "fix_groups": [],
+    "fix_plan": null,
+    "needs_review": false,
+    "correlated_at": "2026-09-30T20:19:11.304451+00:00",
+    "result_hash": "sha256:74700aef29f7838fc07fe2129c4fffd4b19290e73b316339a6284ce8cdeb59d4",
+    "warnings": [
+     {
+      "code": "VENDOR_RESOLVED_PRODUCT_NOT_FOUND",
+      "message": "Vendor resolved to 'Acme' but no matching product was found in the catalog."
+     }
+    ]
+   },
+   {
+    "asset_id": "p",
+    "submitted": {
+     "vendor": "Schneider Electric",
+     "product": "Modicon M340",
+     "version": "",
+     "firmware_version": null,
+     "product_type": null
+    },
+    "resolution": {
+     "status": "resolved",
+     "coverage": "covered",
+     "confidence": 78,
+     "confidence_band": "MEDIUM",
+     "vendor": {
+      "id": 11529,
+      "name": "Schneider-Electric",
+      "slug": "schneider-electric"
+     },
+     "product": {
+      "id": 25001,
+      "name": "Modicon M340",
+      "slug": "schneider-electric_modicon_m340"
+     },
+     "cpe": {
+      "vendor": "schneider-electric",
+      "product": "modicon_m340_firmware"
+     },
+     "match_basis": [
+      "cpe_alias",
+      "exact",
+      "prefix",
+      "substring",
+      "token",
+      "canonical_selected"
+     ]
+    },
+    "candidates": [],
+    "cves": [
+     {
+      "cve_id": "CVE-2018-7846",
+      "bsid": "BS-2019-GLOBAL-211560-C",
+      "title": "A CWE-501: Trust Boundary Violation vulnerability on connection to the Controller exists in all versions of the Modicon ",
+      "description": "A CWE-501: Trust Boundary Violation vulnerability on connection to the Controller exists in all versions of the Modicon M580, Modicon M340, Modicon Quantum and Modicon Premium which could cause unauthorized access by conducting a brute force attack on Modbus protocol to the controller.",
+      "scoring": {
+       "cvss": {
+        "score": 9.8,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+        "version": "3.1",
+        "severity": "CRITICAL",
+        "attack_vector": "NETWORK",
+        "attack_complexity": "LOW",
+        "privileges_required": "NONE",
+        "user_interaction": "NONE",
+        "scope": "UNCHANGED",
+        "confidentiality_impact": "HIGH",
+        "integrity_impact": "HIGH",
+        "availability_impact": "HIGH"
+       },
+       "epss": {
+        "score": 0.29575,
+        "percentile": 0.98133,
+        "interpretation": "Top 5% most likely to be exploited"
+       },
+       "bcs": {
+        "score": 8.82,
+        "tier": "HIGH",
+        "factors": {
+         "kev_flagged": false,
+         "poc_available": true,
+         "has_public_exploit": false,
+         "patch_available": false,
+         "ics_relevance": 0.85
+        }
+       }
+      },
+      "exploitation": {
+       "kev_flagged": false,
+       "kev_added_at": null,
+       "has_public_exploit": false,
+       "poc_available": true,
+       "exploit_maturity": "POC",
+       "actively_exploited": false
+      },
+      "affected": {
+       "vendors": [
+        "Schneider",
+        "Schneider-Electric",
+        "Wolfram Schneider"
+       ],
+       "products": [],
+       "primary_vendor": null,
+       "primary_product": null,
+       "vendor_count": 3,
+       "device_types": [
+        "Programmable Logic Controller"
+       ],
+       "protocols": [],
+       "ics_relevance_score": 0.85,
+       "ics_relevant": true
+      },
+      "patch": {
+       "status": "unknown",
+       "patch_available": false,
+       "patch_version": null,
+       "patch_url": "https://www.schneider-electric.com/en/download/document/SEVD-2019-134-11/",
+       "patch_notes": null
+      },
+      "classification": {
+       "cwes": [
+        {
+         "id": 668,
+         "url": "https://cwe.mitre.org/data/definitions/668.html"
+        }
+       ],
+       "attack_vector": "NETWORK",
+       "attack_complexity": "LOW",
+       "privileges_required": "NONE",
+       "user_interaction": "NONE",
+       "scope": "UNCHANGED",
+       "layer": null,
+       "category": null
+      },
+      "sage": {
+       "model": "SAGE-v1",
+       "tier": "full",
+       "executive_summary": "A critical trust boundary violation vulnerability exists in all versions of Schneider Electric's Modicon series controllers (M580, M340, Quantum, and Premium). This vulnerability allows unauthorized access via a brute force attack on the Modbus protocol, potentially leading to full control of the affected devices. Given the high CVSS score and the availability of a public proof-of-concept, immediate attention is required to mitigate the risk of exploitation.",
+       "ics_context": null,
+       "remediation_guidance": null,
+       "confidence_score": null,
+       "confidence_tier": null,
+       "_upgrade_required": false,
+       "_upgrade_url": null
+      },
+      "temporal": {
+       "published_at": "2019-05-22T20:29:01+00:00",
+       "modified_at": "2026-06-17T02:03:51+00:00",
+       "enriched_at": "2026-05-22T15:37:59.656618+00:00",
+       "kev_added_at": null
+      },
+      "references": {
+       "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2018-7846",
+       "cisa_url": null,
+       "breachspider_url": "https://breachspider.com/ics-cve/CVE-2018-7846",
+       "vendor_advisories": [
+        {
+         "url": "https://www.schneider-electric.com/en/download/document/SEVD-2019-134-11/",
+         "title": null,
+         "source": "nvd_vendor_advisory"
+        },
+        {
+         "url": "https://download.schneider-electric.com/files?p_Doc_Ref=SEVD-2019-134-11&p_enDocType=Security+and+Safety+Notice&p_File_Name=sevd-2019-134-11.json",
+         "title": "Multiple Vulnerabilities in Modicon Controller Products - SEVD-2019-134-11 CSAF Version",
+         "source": "cisa_csaf_vendor_reference"
+        },
+        {
+         "url": "https://download.schneider-electric.com/files?p_Doc_Ref=SEVD-2019-134-11&p_enDocType=Security+and+Safety+Notice&p_File_Name=SEVD-2019-134-11_Modicon_Controllers_Security_Notification.pdf",
+         "title": "Multiple Vulnerabilities in Modicon Controller Products - SEVD-2019-134-11 PDF Version",
+         "source": "cisa_csaf_vendor_reference"
+        }
+       ],
+       "cited_exclusive": null,
+       "cve_org_url": "https://www.cve.org/CVERecord?id=CVE-2018-7846",
+       "cisa_ics_advisories": [
+        {
+         "advisory_id": "ICSA-25-114-01",
+         "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-25-114-01",
+         "title": "Schneider Electric Modicon Controllers (Update A)",
+         "published": "2019-05-14"
+        }
+       ],
+       "other_references": [
+        {
+         "url": "https://www.talosintelligence.com/vulnerability_reports/TALOS-2018-0735",
+         "tags": [
+          "Exploit",
+          "Third Party Advisory"
+         ],
+         "provided_by": "cybersecurity@se.com"
+        }
+       ],
+       "other_references_total": 1
+      },
+      "_links": {
+       "self": "/api/v1/cves/CVE-2018-7846",
+       "pdf": "/api/v1/ics-cve/CVE-2018-7846/pdf",
+       "html": "https://breachspider.com/ics-cve/CVE-2018-7846"
+      },
+      "match_tier": "PRODUCT_WIDE",
+      "affected_range": {
+       "cpe_version": "*",
+       "is_range": true,
+       "version_start": null,
+       "version_start_inclusive": null,
+       "version_end": "3.10",
+       "version_end_inclusive": false,
+       "source": {
+        "type": "government_advisory",
+        "document": "ICSA-25-114-01",
+        "url": "https://download.schneider-electric.com/files?p_Doc_Ref=SEVD-2019-134-11&p_enDocType=Security+and+Safety+Notice&p_File_Name=sevd-2019-134-11.json"
+       }
+      },
+      "priority_rank": 1,
+      "priority_reason": "not version-confirmed, proof-of-concept available, fix: upgrade to 3.10 or later (derived)",
+      "fix": {
+       "available": true,
+       "action": "upgrade to 3.10 or later",
+       "source": "derived",
+       "derived": true
+      },
+      "advisory_guidance": [
+       {
+        "category": "vendor_fix",
+        "details": "Version sv4.20 of Modicon M580 includes a fix for this vulnerability and is available for download here: STEP 1: Update software and firmware. \u2022 On the engineering workstation, update to EcoStruxure Control Expert v16.0: https://www.se.com/ww/en/product-range/548-ecostruxure-control-expert-unity-pro/#software-and-firmware \u2022 On the Modicon M580 controller, update to firmware SV4.20 or above: https:",
+        "details_truncated": true,
+        "fixed_versions": null,
+        "url": "https://www.se.com/ww/en/product-range/62098-modicon-m580-epac/#software-and-firmware",
+        "source_document": "ICSA-25-114-01",
+        "source_url": "https://download.schneider-electric.com/files?p_Doc_Ref=SEVD-2019-134-11&p_enDocType=Security+and+Safety+Notice&p_File_Name=sevd-2019-134-11.json"
+       },
+       {
+        "category": "vendor_fix",
+        "details": "Version sv3.60 of Modicon M340 includes a fix for this vulnerability and is available for download here: STEP 1: Update software and firmware \u2022 On the engineering workstation, update to EcoStruxure Control Expert v16.0 or later: https://www.se.com/ww/en/product-range/548-ecostruxure-control-expert-unity-pro/#software-and-firmware \u2022 On the Modicon M340 controller, update to firmware v3.60 or above:",
+        "details_truncated": true,
+        "fixed_versions": null,
+        "url": "https://www.se.com/ww/en/product-range/1468-modicon-m340/#software-and-firmware",
+        "source_document": "ICSA-25-114-01",
+        "source_url": "https://download.schneider-electric.com/files?p_Doc_Ref=SEVD-2019-134-11&p_enDocType=Security+and+Safety+Notice&p_File_Name=sevd-2019-134-11.json"
+       },
+       {
+        "category": "vendor_fix",
+        "details": "Version sv3.60 of Modicon M340 includes a fix for this vulnerability and is available for download here: STEP 1: Update software and firmware \u2022 On the engineering workstation, update to EcoStruxure\u2122 Control Expert v16.0 or later: https://www.se.com/ww/en/product-range/548-ecostruxure-control-expert-unity-pro/#software-and-firmware \u2022 On the Modicon M340 controller, update to firmware v3.60 or above",
+        "details_truncated": true,
+        "fixed_versions": null,
+        "url": "https://www.se.com/ww/en/product-range/1468-modicon-m340/#software-and-firmware",
+        "source_document": "SEVD-2019-134-11",
+        "source_url": "https://download.schneider-electric.com/files?p_Doc_Ref=SEVD-2019-134-11&p_enDocType=Security+and+Safety+Notice&p_File_Name=SEVD-2019-134-11_Modicon_Controllers_Security_Notification.pdf"
+       },
+       {
+        "category": "mitigation",
+        "details": "It is recommended to apply the following mitigations to reduce the risk of exploitation: \u2022 Set up an application password in the project properties \u2022 Set up network segmentation and implement a firewall to block all unauthorized access to port 502/TCP \u2022 Configure the Access Control List following the recommendations of the user manuals: https://www.se.com/ww/en/download/document/EIO0000001578/ \u2022 S",
+        "details_truncated": true,
+        "fixed_versions": null,
+        "url": "https://www.se.com/ww/en/download/document/EIO0000001999/",
+        "source_document": "ICSA-25-114-01",
+        "source_url": "https://download.schneider-electric.com/files?p_Doc_Ref=SEVD-2019-134-11&p_enDocType=Security+and+Safety+Notice&p_File_Name=sevd-2019-134-11.json"
+       }
+      ]
+     },
+     {
+      "cve_id": "CVE-2018-7842",
+      "bsid": "BS-2019-GLOBAL-192131-C",
+      "title": "A CWE-290: Authentication Bypass by Spoofing vulnerability exists in all versions of the Modicon M580, Modicon M340, Mod",
+      "description": "A CWE-290: Authentication Bypass by Spoofing vulnerability exists in all versions of the Modicon M580, Modicon M340, Modicon Quantum, and Modicon Premium which could cause an elevation of privilege by conducting a brute force attack on Modbus parameters sent to the controller.",
+      "scoring": {
+       "cvss": {
+        "score": 9.8,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+        "version": "3.1",
+        "severity": "CRITICAL",
+        "attack_vector": "NETWORK",
+        "attack_complexity": "LOW",
+        "privileges_required": "NONE",
+        "user_interaction": "NONE",
+        "scope": "UNCHANGED",
+        "confidentiality_impact": "HIGH",
+        "integrity_impact": "HIGH",
+        "availability_impact": "HIGH"
+       },
+       "epss": {
+        "score": 0.35039,
+        "percentile": 0.9839,
+        "interpretation": "Top 5% most likely to be exploited"
+       },
+       "bcs": {
+        "score": 8.72,
+        "tier": "HIGH",
+        "factors": {
+         "kev_flagged": false,
+         "poc_available": true,
+         "has_public_exploit": false,
+         "patch_available": false,
+         "ics_relevance": 0.85
+        }
+       }
+      },
+      "exploitation": {
+       "kev_flagged": false,
+       "kev_added_at": null,
+       "has_public_exploit": false,
+       "poc_available": true,
+       "exploit_maturity": "POC",
+       "actively_exploited": false
+      },
+      "affected": {
+       "vendors": [
+        "Schneider",
+        "Schneider-Electric",
+        "Wolfram Schneider"
+       ],
+       "products": [],
+       "primary_vendor": null,
+       "primary_product": null,
+       "vendor_count": 3,
+       "device_types": [
+        "Programmable Logic Controller"
+       ],
+       "protocols": [],
+       "ics_relevance_score": 0.85,
+       "ics_relevant": true
+      },
+      "patch": {
+       "status": "unknown",
+       "patch_available": false,
+       "patch_version": null,
+       "patch_url": "https://www.schneider-electric.com/en/download/document/SEVD-2019-134-11/",
+       "patch_notes": null
+      },
+      "classification": {
+       "cwes": [
+        {
+         "id": 290,
+         "url": "https://cwe.mitre.org/data/definitions/290.html"
+        }
+       ],
+       "attack_vector": "NETWORK",
+       "attack_complexity": "LOW",
+       "privileges_required": "NONE",
+       "user_interaction": "NONE",
+       "scope": "UNCHANGED",
+       "layer": null,
+       "category": null
+      },
+      "sage": {
+       "model": "SAGE-v1",
+       "tier": "full",
+       "executive_summary": "A critical authentication bypass vulnerability (CVE-2018-7842) affects multiple Schneider Electric Modicon PLC models, allowing attackers to elevate privileges through a brute force attack on Modbus parameters. This could lead to unauthorized control of industrial processes, posing significant safety and operational risks.",
+       "ics_context": null,
+       "remediation_guidance": null,
+       "confidence_score": null,
+       "confidence_tier": null,
+       "_upgrade_required": false,
+       "_upgrade_url": null
+      },
+      "temporal": {
+       "published_at": "2019-05-22T20:29:01+00:00",
+       "modified_at": "2026-06-17T02:03:50+00:00",
+       "enriched_at": "2026-05-22T15:37:59.656618+00:00",
+       "kev_added_at": null
+      },
+      "references": {
+       "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2018-7842",
+       "cisa_url": null,
+       "breachspider_url": "https://breachspider.com/ics-cve/CVE-2018-7842",
+       "vendor_advisories": [
+        {
+         "url": "https://www.schneider-electric.com/en/download/document/SEVD-2019-134-11/",
+         "title": null,
+         "source": "nvd_vendor_advisory"
+        },
+        {
+         "url": "https://download.schneider-electric.com/files?p_Doc_Ref=SEVD-2019-134-11&p_enDocType=Security+and+Safety+Notice&p_File_Name=sevd-2019-134-11.json",
+         "title": "Multiple Vulnerabilities in Modicon Controller Products - SEVD-2019-134-11 CSAF Version",
+         "source": "cisa_csaf_vendor_reference"
+        },
+        {
+         "url": "https://download.schneider-electric.com/files?p_Doc_Ref=SEVD-2019-134-11&p_enDocType=Security+and+Safety+Notice&p_File_Name=SEVD-2019-134-11_Modicon_Controllers_Security_Notification.pdf",
+         "title": "Multiple Vulnerabilities in Modicon Controller Products - SEVD-2019-134-11 PDF Version",
+         "source": "cisa_csaf_vendor_reference"
+        }
+       ],
+       "cited_exclusive": null,
+       "cve_org_url": "https://www.cve.org/CVERecord?id=CVE-2018-7842",
+       "cisa_ics_advisories": [
+        {
+         "advisory_id": "ICSA-25-114-01",
+         "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-25-114-01",
+         "title": "Schneider Electric Modicon Controllers (Update A)",
+         "published": "2019-05-14"
+        }
+       ],
+       "other_references": [
+        {
+         "url": "https://www.talosintelligence.com/vulnerability_reports/TALOS-2018-0741",
+         "tags": [
+          "Exploit",
+          "Third Party Advisory"
+         ],
+         "provided_by": "cybersecurity@se.com"
+        }
+       ],
+       "other_references_total": 1
+      },
+      "_links": {
+       "self": "/api/v1/cves/CVE-2018-7842",
+       "pdf": "/api/v1/ics-cve/CVE-2018-7842/pdf",
+       "html": "https://breachspider.com/ics-cve/CVE-2018-7842"
+      },
+      "match_tier": "PRODUCT_WIDE",
+      "affected_range": {
+       "cpe_version": "*",
+       "is_range": true,
+       "version_start": null,
+       "version_start_inclusive": null,
+       "version_end": "3.10",
+       "version_end_inclusive": false,
+       "source": {
+        "type": "government_advisory",
+        "document": "ICSA-25-114-01",
+        "url": "https://download.schneider-electric.com/files?p_Doc_Ref=SEVD-2019-134-11&p_enDocType=Security+and+Safety+Notice&p_File_Name=sevd-2019-134-11.json"
+       }
+      },
+      "priority_rank": 2,
+      "priority_reason": "not version-confirmed, proof-of-concept available, fix: upgrade to 3.10 or later (derived)",
+      "fix": {
+       "available": true,
+       "action": "upgrade to 3.10 or later",
+       "source": "derived",
+       "derived": true
+      },
+      "advisory_guidance": [
+       {
+        "category": "vendor_fix",
+        "details": "Version sv4.20 of Modicon M580 includes a fix for this vulnerability and is available for download here: STEP 1: Update software and firmware. \u2022 On the engineering workstation, update to EcoStruxure Control Expert v16.0: https://www.se.com/ww/en/product-range/548-ecostruxure-control-expert-unity-pro/#software-and-firmware \u2022 On the Modicon M580 controller, update to firmware SV4.20 or above: https:",
+        "details_truncated": true,
+        "fixed_versions": null,
+        "url": "https://www.se.com/ww/en/product-range/62098-modicon-m580-epac/#software-and-firmware",
+        "source_document": "ICSA-25-114-01",
+        "source_url": "https://download.schneider-electric.com/files?p_Doc_Ref=SEVD-2019-134-11&p_enDocType=Security+and+Safety+Notice&p_File_Name=sevd-2019-134-11.json"
+       },
+       {
+        "category": "vendor_fix",
+        "details": "Version sv3.60 of Modicon M340 includes a fix for this vulnerability and is available for download here: STEP 1: Update software and firmware \u2022 On the engineering workstation, update to EcoStruxure Control Expert v16.0 or later: https://www.se.com/ww/en/product-range/548-ecostruxure-control-expert-unity-pro/#software-and-firmware \u2022 On the Modicon M340 controller, update to firmware v3.60 or above:",
+        "details_truncated": true,
+        "fixed_versions": null,
+        "url": "https://www.se.com/ww/en/product-range/1468-modicon-m340/#software-and-firmware",
+        "source_document": "ICSA-25-114-01",
+        "source_url": "https://download.schneider-electric.com/files?p_Doc_Ref=SEVD-2019-134-11&p_enDocType=Security+and+Safety+Notice&p_File_Name=sevd-2019-134-11.json"
+       },
+       {
+        "category": "vendor_fix",
+        "details": "Version sv3.60 of Modicon M340 includes a fix for this vulnerability and is available for download here: STEP 1: Update software and firmware \u2022 On the engineering workstation, update to EcoStruxure\u2122 Control Expert v16.0 or later: https://www.se.com/ww/en/product-range/548-ecostruxure-control-expert-unity-pro/#software-and-firmware \u2022 On the Modicon M340 controller, update to firmware v3.60 or above",
+        "details_truncated": true,
+        "fixed_versions": null,
+        "url": "https://www.se.com/ww/en/product-range/1468-modicon-m340/#software-and-firmware",
+        "source_document": "SEVD-2019-134-11",
+        "source_url": "https://download.schneider-electric.com/files?p_Doc_Ref=SEVD-2019-134-11&p_enDocType=Security+and+Safety+Notice&p_File_Name=SEVD-2019-134-11_Modicon_Controllers_Security_Notification.pdf"
+       },
+       {
+        "category": "mitigation",
+        "details": "It is recommended to apply the following mitigations to reduce the risk of exploitation: \u2022 Set up an application password in the project properties \u2022 Set up network segmentation and implement a firewall to block all unauthorized access to port 502/TCP \u2022 Configure the Access Control List following the recommendations of the user manuals: https://www.se.com/ww/en/download/document/EIO0000001578/ \u2022 S",
+        "details_truncated": true,
+        "fixed_versions": null,
+        "url": "https://www.se.com/ww/en/download/document/EIO0000001999/",
+        "source_document": "ICSA-25-114-01",
+        "source_url": "https://download.schneider-electric.com/files?p_Doc_Ref=SEVD-2019-134-11&p_enDocType=Security+and+Safety+Notice&p_File_Name=sevd-2019-134-11.json"
+       }
+      ]
+     }
+    ],
+    "cves_page": {
+     "page": 1,
+     "page_size": 2,
+     "total": 66,
+     "total_unfiltered": 66,
+     "has_more": true
+    },
+    "fix_groups": [
+     {
+      "fix": "upgrade to 3.10 or later",
+      "fix_type": "version",
+      "source": "derived",
+      "derived": true,
+      "cve_ids": [
+       "CVE-2018-7846",
+       "CVE-2018-7842",
+       "CVE-2018-7843",
+       "CVE-2018-7849",
+       "CVE-2018-7848",
+       "CVE-2018-7854",
+       "CVE-2019-6808",
+       "CVE-2018-7847",
+       "CVE-2019-6809",
+       "CVE-2018-7856",
+       "CVE-2019-6806",
+       "CVE-2019-6829",
+       "CVE-2019-6828",
+       "CVE-2019-6807",
+       "CVE-2018-7850"
+      ],
+      "counts": {
+       "total": 15,
+       "confirmed": 0,
+       "known_exploited": 0,
+       "exploit_available": 6
+      },
+      "highest_score": {
+       "bcs": 8.82,
+       "cvss": 9.8
+      },
+      "group_rank": 1
+     },
+     {
+      "fix": "upgrade to 3.01 or later",
+      "fix_type": "version",
+      "source": "derived",
+      "derived": true,
+      "cve_ids": [
+       "CVE-2018-7852",
+       "CVE-2018-7845",
+       "CVE-2019-6856",
+       "CVE-2019-6857",
+       "CVE-2018-7857",
+       "CVE-2019-6819",
+       "CVE-2018-7794"
+      ],
+      "counts": {
+       "total": 7,
+       "confirmed": 0,
+       "known_exploited": 0,
+       "exploit_available": 2
+      },
+      "highest_score": {
+       "bcs": 7.38,
+       "cvss": 7.5
+      },
+      "group_rank": 2
+     },
+     {
+      "fix": "upgrade to 3.20 or later",
+      "fix_type": "version",
+      "source": "derived",
+      "derived": true,
+      "cve_ids": [
+       "CVE-2020-7475"
+      ],
+      "counts": {
+       "total": 1,
+       "confirmed": 0,
+       "known_exploited": 0,
+       "exploit_available": 0
+      },
+      "highest_score": {
+       "bcs": 7.76,
+       "cvss": 9.8
+      },
+      "group_rank": 3
+     },
+     {
+      "fix": "upgrade to 3.51 or later",
+      "fix_type": "version",
+      "source": "derived",
+      "derived": true,
+      "cve_ids": [
+       "CVE-2022-45788",
+       "CVE-2023-25619",
+       "CVE-2023-25620"
+      ],
+      "counts": {
+       "total": 3,
+       "confirmed": 0,
+       "known_exploited": 0,
+       "exploit_available": 0
+      },
+      "highest_score": {
+       "bcs": 7.56,
+       "cvss": 9.8
+      },
+      "group_rank": 4
+     },
+     {
+      "fix": "upgrade to 3.70 or later",
+      "fix_type": "version",
+      "source": "derived",
+      "derived": true,
+      "cve_ids": [
+       "CVE-2022-45789",
+       "CVE-2025-6625"
+      ],
+      "counts": {
+       "total": 2,
+       "confirmed": 0,
+       "known_exploited": 0,
+       "exploit_available": 0
+      },
+      "highest_score": {
+       "bcs": 6.78,
+       "cvss": 9.8
+      },
+      "group_rank": 5
+     },
+     {
+      "fix": "upgrade beyond 3.40",
+      "fix_type": "version",
+      "source": "derived",
+      "derived": true,
+      "cve_ids": [
+       "CVE-2022-37301"
+      ],
+      "counts": {
+       "total": 1,
+       "confirmed": 0,
+       "known_exploited": 0,
+       "exploit_available": 0
+      },
+      "highest_score": {
+       "bcs": 6.35,
+       "cvss": 7.5
+      },
+      "group_rank": 6
+     },
+     {
+      "fix": "upgrade to 3.60 or later",
+      "fix_type": "version",
+      "source": "derived",
+      "derived": true,
+      "cve_ids": [
+       "CVE-2018-7855",
+       "CVE-2023-6408"
+      ],
+      "counts": {
+       "total": 2,
+       "confirmed": 0,
+       "known_exploited": 0,
+       "exploit_available": 0
+      },
+      "highest_score": {
+       "bcs": 6.27,
+       "cvss": 8.1
+      },
+      "group_rank": 7
+     },
+     {
+      "fix": "upgrade to 3.30 or later",
+      "fix_type": "version",
+      "source": "derived",
+      "derived": true,
+      "cve_ids": [
+       "CVE-2021-22786"
+      ],
+      "counts": {
+       "total": 1,
+       "confirmed": 0,
+       "known_exploited": 0,
+       "exploit_available": 0
+      },
+      "highest_score": {
+       "bcs": 6.11,
+       "cvss": 7.5
+      },
+      "group_rank": 8
+     },
+     {
+      "fix": "upgrade to 3.65 or later",
+      "fix_type": "version",
+      "source": "derived",
+      "derived": true,
+      "cve_ids": [
+       "CVE-2024-8938",
+       "CVE-2024-8936",
+       "CVE-2024-8937"
+      ],
+      "counts": {
+       "total": 3,
+       "confirmed": 0,
+       "known_exploited": 0,
+       "exploit_available": 0
+      },
+      "highest_score": {
+       "bcs": 5.79,
+       "cvss": 8.1
+      },
+      "group_rank": 9
+     },
+     {
+      "fix": "no fix known",
+      "fix_type": "none",
+      "source": null,
+      "derived": false,
+      "cve_ids": [
+       "CVE-2018-7844",
+       "CVE-2013-0663",
+       "CVE-2011-4859",
+       "CVE-2018-7809",
+       "CVE-2018-7811",
+       "CVE-2018-7241",
+       "CVE-2018-7242",
+       "CVE-2013-0664",
+       "CVE-2018-7240",
+       "CVE-2018-7830",
+       "CVE-2019-6851",
+       "CVE-2018-7831",
+       "CVE-2018-7812",
+       "CVE-2024-12142",
+       "CVE-2019-6813",
+       "CVE-2018-7833",
+       "CVE-2019-6852",
+       "CVE-2019-6859",
+       "CVE-2019-6845",
+       "CVE-2024-8933",
+       "CVE-2019-6821",
+       "CVE-2019-6846",
+       "CVE-2018-7810",
+       "CVE-2024-5056",
+       "CVE-2018-7804",
+       "CVE-2019-6841",
+       "CVE-2019-6842",
+       "CVE-2019-6843",
+       "CVE-2019-6844",
+       "CVE-2019-6847",
+       "CVE-2013-2761"
+      ],
+      "counts": {
+       "total": 31,
+       "confirmed": 0,
+       "known_exploited": 0,
+       "exploit_available": 2
+      },
+      "highest_score": {
+       "bcs": 8.33,
+       "cvss": 10.0
+      },
+      "group_rank": 10
+     }
+    ],
+    "fix_plan": {
+     "to_clear_known_exploited": null,
+     "to_clear_all_fixable": {
+      "fix": "upgrade to 3.70 or later",
+      "derived": true,
+      "source": "derived",
+      "clears": {
+       "cves": 35,
+       "known_exploited": 0,
+       "groups": 9
+      },
+      "note": "Derived from affected version ranges, not from a vendor fix statement. Confirm the target release in the vendor's advisory: that release may not exist in this product line."
+     }
+    },
+    "needs_review": false,
+    "correlated_at": "2026-09-30T20:19:11.479850+00:00",
+    "result_hash": "sha256:a592495d189052f540136428e6fd0594135d64c4b19f9226e3502062620469dc",
+    "warnings": [
+     {
+      "code": "NO_VERSION_SUPPLIED",
+      "message": "No version supplied; version corroboration signal unavailable."
+     },
+     {
+      "code": "CANONICAL_SELECTED",
+      "message": "14 candidates within 12 points, but all are CPE variants of the exact-name product 'Modicon M340'; resolved to it (no union)."
+     },
+     {
+      "code": "PRODUCT_WIDE_MATCH",
+      "message": "One or more CVEs apply to the product with no version bound (product-wide)."
+     }
+    ]
+   }
+  ],
+  "summary": {
+   "total": 3,
+   "by_status": {
+    "resolved": 2,
+    "ambiguous": 0,
+    "unresolved": 1
+   },
+   "by_coverage": {
+    "covered": 2,
+    "no_cpe_data": 0,
+    "partial": 0,
+    "null": 1
+   }
+  },
+  "fix_summary": [
+   {
+    "rank": 1,
+    "fix": "upgrade to 2.6 or later",
+    "product": "Simatic S7-1500",
+    "fix_type": "version",
+    "source": "derived",
+    "derived": true,
+    "asset_ids": [
+     "s"
+    ],
+    "counts": {
+     "assets": 1,
+     "cves": 2,
+     "known_exploited": 0,
+     "exploit_available": 1,
+     "confirmed": 2
+    },
+    "highest_score": {
+     "bcs": 7.25,
+     "cvss": 7.5
+    }
+   },
+   {
+    "rank": 2,
+    "fix": "upgrade to 2.5 or later",
+    "product": "Simatic S7-1500",
+    "fix_type": "version",
+    "source": "derived",
+    "derived": true,
+    "asset_ids": [
+     "s"
+    ],
+    "counts": {
+     "assets": 1,
+     "cves": 3,
+     "known_exploited": 0,
+     "exploit_available": 0,
+     "confirmed": 3
+    },
+    "highest_score": {
+     "bcs": 6.57,
+     "cvss": 7.5
+    }
+   },
+   {
+    "rank": 3,
+    "fix": "upgrade beyond 2.5",
+    "product": "Simatic S7-1500",
+    "fix_type": "version",
+    "source": "derived",
+    "derived": true,
+    "asset_ids": [
+     "s"
+    ],
+    "counts": {
+     "assets": 1,
+     "cves": 1,
+     "known_exploited": 0,
+     "exploit_available": 0,
+     "confirmed": 1
+    },
+    "highest_score": {
+     "bcs": 6.57,
+     "cvss": 7.5
+    }
+   },
+   {
+    "rank": 4,
+    "fix": "upgrade to 2.6.1 or later",
+    "product": "Simatic S7-1500",
+    "fix_type": "version",
+    "source": "derived",
+    "derived": true,
+    "asset_ids": [
+     "s"
+    ],
+    "counts": {
+     "assets": 1,
+     "cves": 1,
+     "known_exploited": 0,
+     "exploit_available": 0,
+     "confirmed": 1
+    },
+    "highest_score": {
+     "bcs": 6.23,
+     "cvss": 7.5
+    }
+   },
+   {
+    "rank": 5,
+    "fix": "upgrade to 2.1 or later",
+    "product": "Simatic S7-1500",
+    "fix_type": "version",
+    "source": "derived",
+    "derived": true,
+    "asset_ids": [
+     "s"
+    ],
+    "counts": {
+     "assets": 1,
+     "cves": 2,
+     "known_exploited": 0,
+     "exploit_available": 0,
+     "confirmed": 2
+    },
+    "highest_score": {
+     "bcs": 6.1,
+     "cvss": 6.5
+    }
+   },
+   {
+    "rank": 6,
+    "fix": "upgrade to 3.10 or later",
+    "product": "Modicon M340",
+    "fix_type": "version",
+    "source": "derived",
+    "derived": true,
+    "asset_ids": [
+     "p"
+    ],
+    "counts": {
+     "assets": 1,
+     "cves": 15,
+     "known_exploited": 0,
+     "exploit_available": 6,
+     "confirmed": 0
+    },
+    "highest_score": {
+     "bcs": 8.82,
+     "cvss": 9.8
+    }
+   },
+   {
+    "rank": 7,
+    "fix": "upgrade to 3.01 or later",
+    "product": "Modicon M340",
+    "fix_type": "version",
+    "source": "derived",
+    "derived": true,
+    "asset_ids": [
+     "p"
+    ],
+    "counts": {
+     "assets": 1,
+     "cves": 7,
+     "known_exploited": 0,
+     "exploit_available": 2,
+     "confirmed": 0
+    },
+    "highest_score": {
+     "bcs": 7.38,
+     "cvss": 7.5
+    }
+   },
+   {
+    "rank": 8,
+    "fix": "upgrade to 3.20 or later",
+    "product": "Modicon M340",
+    "fix_type": "version",
+    "source": "derived",
+    "derived": true,
+    "asset_ids": [
+     "p"
+    ],
+    "counts": {
+     "assets": 1,
+     "cves": 1,
+     "known_exploited": 0,
+     "exploit_available": 0,
+     "confirmed": 0
+    },
+    "highest_score": {
+     "bcs": 7.76,
+     "cvss": 9.8
+    }
+   },
+   {
+    "rank": 9,
+    "fix": "upgrade to 3.51 or later",
+    "product": "Modicon M340",
+    "fix_type": "version",
+    "source": "derived",
+    "derived": true,
+    "asset_ids": [
+     "p"
+    ],
+    "counts": {
+     "assets": 1,
+     "cves": 3,
+     "known_exploited": 0,
+     "exploit_available": 0,
+     "confirmed": 0
+    },
+    "highest_score": {
+     "bcs": 7.56,
+     "cvss": 9.8
+    }
+   },
+   {
+    "rank": 10,
+    "fix": "upgrade to 3.70 or later",
+    "product": "Modicon M340",
+    "fix_type": "version",
+    "source": "derived",
+    "derived": true,
+    "asset_ids": [
+     "p"
+    ],
+    "counts": {
+     "assets": 1,
+     "cves": 2,
+     "known_exploited": 0,
+     "exploit_available": 0,
+     "confirmed": 0
+    },
+    "highest_score": {
+     "bcs": 6.78,
+     "cvss": 9.8
+    }
+   }
+  ]
+ },
+ "meta": {
+  "source": "breachspider-correlate",
+  "matcher": "stateless; same rules as stored matching",
+  "enrichment_version": "2.1",
+  "sage_model": "SAGE-v1",
+  "sort": "priority",
+  "filters": {
+   "confirmed_only": false,
+   "known_exploited_only": false,
+   "fix_available_only": false
+  },
+  "cve_paging": {
+   "page": 1,
+   "page_size": 2,
+   "note": "Per-asset CVE pages; see each result's cves_page. result_hash covers all CVEs."
+  }
+ },
+ "_links": {
+  "self": "/api/v1/assets/correlate-cves"
+ }
+}

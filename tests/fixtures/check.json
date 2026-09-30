@@ -1,0 +1,34 @@
+{
+ "api": {
+  "version": "1.0.0",
+  "request_id": "bs-req-70abe347d011",
+  "timestamp": "2026-09-30T20:19:10.132209Z",
+  "processing_ms": 206
+ },
+ "data": {
+  "results": [
+   {
+    "asset_id": "a1",
+    "changed": false,
+    "current_hash": "sha256:4d53391f951710d36c7a036e815cdb1b173dd8afdcb3290182561826b54c6236",
+    "reason": "identity and cve/tier set unchanged"
+   },
+   {
+    "asset_id": "a2",
+    "changed": true,
+    "current_hash": "sha256:4d53391f951710d36c7a036e815cdb1b173dd8afdcb3290182561826b54c6236",
+    "reason": "resolved identity or cve/tier set differs from submitted hash"
+   }
+  ],
+  "changed": [
+   "a2"
+  ]
+ },
+ "meta": {
+  "source": "breachspider-correlate",
+  "mode": "staleness-check"
+ },
+ "_links": {
+  "self": "/api/v1/assets/correlate-cves/check"
+ }
+}

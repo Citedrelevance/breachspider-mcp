@@ -1,0 +1,198 @@
+{
+ "api": {
+  "version": "1.0.0",
+  "request_id": "bs-req-87480c4c4410",
+  "timestamp": "2026-09-30T20:19:10.172801Z",
+  "processing_ms": 9
+ },
+ "data": {
+  "cve_id": "CVE-2024-9137",
+  "bsid": "BS-2024-GLOBAL-046494-C",
+  "title": "The affected product lacks an authentication check when sending commands to the server via the Moxa service. This vulner",
+  "description": "The affected product lacks an authentication check when sending commands to the server via the Moxa service. This vulnerability allows an attacker to execute specified commands, potentially leading to unauthorized downloads or uploads of configuration files and system compromise.",
+  "scoring": {
+   "cvss": {
+    "score": 9.4,
+    "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:H/A:H",
+    "version": "3.1",
+    "severity": "CRITICAL",
+    "attack_vector": "NETWORK",
+    "attack_complexity": "LOW",
+    "privileges_required": "NONE",
+    "user_interaction": "NONE",
+    "scope": "UNCHANGED",
+    "confidentiality_impact": "LOW",
+    "integrity_impact": "HIGH",
+    "availability_impact": "HIGH"
+   },
+   "epss": {
+    "score": 0.00501,
+    "percentile": 0.40497,
+    "interpretation": "Below median exploitation probability"
+   },
+   "bcs": {
+    "score": 6.84,
+    "tier": "MEDIUM",
+    "factors": {
+     "kev_flagged": false,
+     "poc_available": false,
+     "has_public_exploit": false,
+     "patch_available": false,
+     "ics_relevance": 0.7
+    }
+   }
+  },
+  "exploitation": {
+   "kev_flagged": false,
+   "kev_added_at": null,
+   "has_public_exploit": false,
+   "poc_available": false,
+   "exploit_maturity": "NONE",
+   "actively_exploited": false
+  },
+  "affected": {
+   "vendors": [
+    "Moxa"
+   ],
+   "products": [],
+   "primary_vendor": null,
+   "primary_product": null,
+   "vendor_count": 1,
+   "device_types": [
+    "Industrial Firewall"
+   ],
+   "protocols": [],
+   "ics_relevance_score": 0.7,
+   "ics_relevant": true
+  },
+  "patch": {
+   "status": "unknown",
+   "patch_available": false,
+   "patch_version": null,
+   "patch_url": null,
+   "patch_notes": null
+  },
+  "classification": {
+   "cwes": [
+    {
+     "id": 306,
+     "url": "https://cwe.mitre.org/data/definitions/306.html"
+    }
+   ],
+   "attack_vector": "NETWORK",
+   "attack_complexity": "LOW",
+   "privileges_required": "NONE",
+   "user_interaction": "NONE",
+   "scope": "UNCHANGED",
+   "layer": null,
+   "category": null
+  },
+  "sage": {
+   "model": "SAGE-v1",
+   "tier": "full",
+   "executive_summary": "CVE-2024-9137 affects Moxa products due to a lack of authentication checks when sending commands to the server via the Moxa service. This can lead to unauthorized command execution, potentially allowing attackers to download or upload configuration files and compromise the system. The CVSS score is 9.4, indicating a high severity level.",
+   "ics_context": null,
+   "remediation_guidance": null,
+   "confidence_score": null,
+   "confidence_tier": null,
+   "_upgrade_required": false,
+   "_upgrade_url": null
+  },
+  "temporal": {
+   "published_at": "2024-10-14T09:15:04+00:00",
+   "modified_at": "2026-06-17T08:24:01+00:00",
+   "enriched_at": "2026-05-22T15:36:48.504598+00:00",
+   "kev_added_at": null
+  },
+  "references": {
+   "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2024-9137",
+   "cisa_url": null,
+   "breachspider_url": "https://breachspider.com/ics-cve/CVE-2024-9137",
+   "vendor_advisories": [
+    {
+     "url": "https://www.moxa.com/en/support/product-support/security-advisory/mpsa-241154-missing-authentication-and-os-command-injection-vulnerabilities-in-routers-and-network-security-appliances",
+     "title": null,
+     "source": "vendor_cna"
+    },
+    {
+     "url": "https://www.moxa.com/en/support/product-support/security-advisory/mpsa-241156-cve-2024-9137-missing-authentication-vulnerability-in-ethernet-switches",
+     "title": null,
+     "source": "vendor_cna"
+    }
+   ],
+   "cited_exclusive": null,
+   "cve_org_url": "https://www.cve.org/CVERecord?id=CVE-2024-9137",
+   "cisa_ics_advisories": [],
+   "other_references": [],
+   "other_references_total": 0
+  },
+  "_links": {
+   "self": "/api/v1/cves/CVE-2024-9137",
+   "pdf": "/api/v1/ics-cve/CVE-2024-9137/pdf",
+   "html": "https://breachspider.com/ics-cve/CVE-2024-9137"
+  },
+  "capec": [
+   {
+    "capec_id": 12,
+    "name": "Choosing Message Identifier",
+    "slug": "capec-12",
+    "typical_severity": "High",
+    "via_cwe": [
+     306
+    ]
+   },
+   {
+    "capec_id": 36,
+    "name": "Using Unpublished Interfaces or Functionality",
+    "slug": "capec-36",
+    "typical_severity": "High",
+    "via_cwe": [
+     306
+    ]
+   },
+   {
+    "capec_id": 62,
+    "name": "Cross Site Request Forgery",
+    "slug": "capec-62",
+    "typical_severity": "Very High",
+    "via_cwe": [
+     306
+    ]
+   },
+   {
+    "capec_id": 166,
+    "name": "Force the System to Reset Values",
+    "slug": "capec-166",
+    "typical_severity": "Medium",
+    "via_cwe": [
+     306
+    ]
+   },
+   {
+    "capec_id": 216,
+    "name": "Communication Channel Manipulation",
+    "slug": "capec-216",
+    "typical_severity": null,
+    "via_cwe": [
+     306
+    ]
+   }
+  ],
+  "watchlist_match": false
+ },
+ "meta": {
+  "enrichment_version": "2.1",
+  "sage_model": "SAGE-v1",
+  "source": "breachspider-enriched",
+  "capec_source": {
+   "catalog": "MITRE CAPEC",
+   "version": "3.9",
+   "mapping": "CWE-to-CAPEC per MITRE"
+  }
+ },
+ "_links": {
+  "self": "/api/v1/cves/CVE-2024-9137",
+  "pdf": "/api/v1/ics-cve/CVE-2024-9137/pdf",
+  "html": "https://breachspider.com/ics-cve/CVE-2024-9137"
+ }
+}
