@@ -18,7 +18,7 @@ classifiers = [
     "Topic :: Security",
 ]
 dependencies = [
-    "mcp>=1.10",
+    "mcp>=1.30",
     "breachspider>=0.3.0,<1",
 ]
 
