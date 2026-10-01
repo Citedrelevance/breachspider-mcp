@@ -57,7 +57,7 @@ class Device(BaseModel):
     vendor: str = Field(description="Vendor exactly as the inventory says, for example 'Moxa'.")
     product: str = Field(description="Product or model exactly as the inventory says, for example 'EDS-518A'.")
     version: Optional[str] = Field(default=None, description="Firmware or software version as written, for example 'V3.5'.")
-    asset_id: Optional[str] = Field(default=None, description="Optional neutral id to map results back, for example 'asset-7'. Never a host name or address.")
+    asset_id: Optional[str] = Field(default=None, description="Optional neutral id to map results back, for example 'asset-7' or '42'. Any other id, such as a host name or address, is replaced with asset-N.")
 
 
 class DeviceWithHash(Device):

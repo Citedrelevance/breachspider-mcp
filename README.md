@@ -96,7 +96,9 @@ Moxa advisory MPSA-241156.
 Only `vendor`, `product`, `version` and an optional `asset_id` (plus `result_hash` for `check_changes`) are sent.
 Any other field is dropped before the request. Fields that look identifying (host name, IP or MAC address, user,
 site, location, serial number and similar) are listed in the output under `privacy.dropped_identifying_fields`.
-An `asset_id` that looks like a host name, address or email is replaced with a neutral id such as `asset-1`.
+An `asset_id` is sent only when it is clearly neutral: a generic prefix and a number (`asset-7`, `device_12`, `42`)
+or a UUID. Anything else, including short host names such as `plant-a-sw01`, IP or MAC addresses and emails, is
+replaced with a neutral id such as `asset-1`.
 
 ## Honest results
 

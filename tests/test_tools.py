@@ -2,6 +2,7 @@
 
 import json
 
+import pytest
 import responses
 
 from conftest import (CHECK, CORRELATE, TEST_KEY, BASE, call, fixture, list_tools)
@@ -124,6 +125,29 @@ def test_identifying_fields_stripped_and_reported(keyed_server, mocked):
     assert p["ignored_fields"] == ["description"]
     assert p["asset_ids_replaced"]["asset_ids"] == ["asset-1"]
     assert "10.20.30.40" not in json.dumps(out)
+
+
+@pytest.mark.parametrize("asset_id", [
+    "plant-a-sw01", "sw01", "PLC-LINE2", "hmi-north-3", "10.20.30.40", "fe80::1", "00:90:e8:12:34:56",
+    "0090.e812.3456", "jdoe@example.com", "sw-core-1.plant.example.com", "x" * 200])
+def test_non_neutral_asset_id_replaced(keyed_server, mocked, asset_id):
+    mocked.add(responses.POST, CORRELATE, json=fixture("correlate_eds518a.json"))
+    _, out = call(keyed_server, "correlate_devices", {"assets": [{
+        "vendor": "Moxa", "product": "EDS-518A", "version": "3.5", "asset_id": asset_id}]})
+    assert _sent(mocked)["assets"][0]["asset_id"] == "asset-1"
+    assert out["privacy"]["asset_ids_replaced"]["asset_ids"] == ["asset-1"]
+    assert asset_id not in mocked.calls[-1].request.body.decode()
+
+
+@pytest.mark.parametrize("asset_id", [
+    "asset-7", "asset_7", "Device-12", "dev12", "node 3", "42", "asset-7#2",
+    "3f2b8c1e-1d2a-4b5c-9e8f-0a1b2c3d4e5f"])
+def test_neutral_asset_id_kept(keyed_server, mocked, asset_id):
+    mocked.add(responses.POST, CORRELATE, json=fixture("correlate_eds518a.json"))
+    _, out = call(keyed_server, "correlate_devices", {"assets": [{
+        "vendor": "Moxa", "product": "EDS-518A", "version": "3.5", "asset_id": asset_id}]})
+    assert _sent(mocked)["assets"][0]["asset_id"] == asset_id
+    assert "asset_ids_replaced" not in out.get("privacy", {})
 
 
 # ------------------------------------------------------------ check_changes

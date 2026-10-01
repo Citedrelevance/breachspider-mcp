@@ -2,7 +2,8 @@
 
 Only vendor, product, version, asset_id (and result_hash for check_changes) ever leave this machine. Any other
 field an agent passes along is dropped, and the fields that look identifying are named in the output so the
-user can see what was held back. An asset_id that looks like a hostname, IP or MAC address is replaced with a
+user can see what was held back. An asset_id is sent only when it is clearly neutral (asset-7, device_12, 42 or a
+UUID); anything else, such as a host name like plant-a-sw01, an IP or MAC address or an email, is replaced with a
 neutral one, because the API echoes it back and logs request shapes.
 """
 
@@ -23,11 +24,13 @@ _IDENTIFYING_TOKENS = frozenset({
     "serial", "serialno", "serialnumber", "sn",
 })
 
-_IPV4 = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
-_IPV6 = re.compile(r"\b(?:[0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4}\b", re.I)
-_MAC = re.compile(r"\b[0-9a-f]{2}(?:[:-][0-9a-f]{2}){5}\b|\b[0-9a-f]{4}\.[0-9a-f]{4}\.[0-9a-f]{4}\b", re.I)
-_FQDN = re.compile(r"\b[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+\.[a-z]{2,}\b", re.I)
-_EMAIL = re.compile(r"[^@\s]+@[^@\s]+")
+# An asset_id is sent only if it is clearly neutral: an optional generic prefix and a number, or a UUID, with the
+# "#n" suffix this module adds to repeated ids. Short host names such as "plant-a-sw01" have no dot, so no
+# pattern can tell them apart from other free text; an allowlist is the only safe test.
+_NEUTRAL_ID = re.compile(
+    r"(?:(?:asset|device|dev|item|node|row|id|a|d)[-_ ]?)?\d{1,9}"
+    r"|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+    re.I)
 
 
 def _tokens(key: str) -> List[str]:
@@ -40,15 +43,10 @@ def is_identifying_field(key: str) -> bool:
     return any(t in _IDENTIFYING_TOKENS for t in toks) or "".join(toks) in _IDENTIFYING_TOKENS
 
 
-def looks_identifying(value: str) -> bool:
-    """True when a free-text value looks like an IP, MAC, email or fully qualified host name."""
-    v = str(value)
-    return bool(_IPV4.search(v) or _MAC.search(v) or _EMAIL.search(v) or _FQDN.search(v)
-                or (":" in v and _IPV6.search(v) and not _looks_like_version(v)))
-
-
-def _looks_like_version(v: str) -> bool:
-    return bool(re.fullmatch(r"[vV]?\d+(?:[.:]\d+)*", v.strip()))
+def is_neutral_id(value: str) -> bool:
+    """True when an asset_id carries no host name, address, email or other free text."""
+    base = re.sub(r"#\d+$", "", str(value).strip())
+    return bool(_NEUTRAL_ID.fullmatch(base))
 
 
 def _text(value: Any) -> str:
@@ -83,7 +81,7 @@ def clean_assets(assets: Iterable[Any], extra_fields: Tuple[str, ...] = ()) -> T
         aid = out.get("asset_id")
         if not aid:
             out["asset_id"] = default_id
-        elif looks_identifying(aid) or len(aid) > 128:
+        elif not is_neutral_id(aid):
             replaced_ids.append(default_id)
             out["asset_id"] = default_id
         cleaned.append(out)
@@ -104,6 +102,6 @@ def clean_assets(assets: Iterable[Any], extra_fields: Tuple[str, ...] = ()) -> T
     if replaced_ids:
         report["asset_ids_replaced"] = {
             "asset_ids": replaced_ids,
-            "reason": "the submitted asset_id looked like a host name, address or email, so a neutral id was sent",
+            "reason": "the submitted asset_id was not a neutral id such as asset-7 and could be a host name, address or email, so a neutral id was sent",
         }
     return cleaned, report
