@@ -1,3 +1,3 @@
 """Read-only MCP server for the BreachSpider device CVE API."""
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"

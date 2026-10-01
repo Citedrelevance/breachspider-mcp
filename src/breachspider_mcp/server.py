@@ -28,7 +28,7 @@ except ImportError:  # mcp 1.x
 from mcp.types import ToolAnnotations
 
 from . import __version__, shaping
-from .api import API, CHECK_PATH, CORRELATE_PATH, DEMO_NOTICE, DEVELOPERS_URL, CONTACT_URL, ToolFailure, format_failure
+from .api import API, CHECK_PATH, CORRELATE_PATH, DEMO_NOTICE, DEVELOPERS_URL, CONTACT_URL, ToolFailure, agent_sentence, format_failure
 from .safety import clean_assets, clean_windows_hosts
 
 MAX_FINDINGS = 100
@@ -123,9 +123,10 @@ async def _call(api: API, method: str, path: str, json: Optional[Dict[str, Any]]
         raise ToolError(format_failure(e.sentence, msg, e.guidance)) from None
 
 
-def _fail(message: str, action: str) -> ToolError:
+def _fail(message: str, action: str, demo: bool = False) -> ToolError:
     """A failure found before calling the API: not retryable, with the same retry guidance as API errors."""
-    return ToolError(str(ToolFailure(message, {"retryable": False, "retry_after_seconds": None, "action": action})))
+    g = {"retryable": False, "retry_after_seconds": None, "action": action}
+    return ToolError(str(ToolFailure(message, g, agent_sentence(g, demo=demo))))
 
 
 def _correlate_body(assets, *, page_size: int, confirmed_only=False, known_exploited_only=False,
@@ -300,7 +301,7 @@ def build_server(api: Optional[API] = None) -> Any:
         if api.demo:
             raise _fail(f"check_windows_host is not available in {DEMO_NOTICE}, and trial keys cannot use it "
                         f"either. It needs a partner or customer API key in BREACHSPIDER_API_KEY. Talk to us: "
-                        f"{CONTACT_URL} (developer page: {DEVELOPERS_URL}).", "use_different_key")
+                        f"{CONTACT_URL} (developer page: {DEVELOPERS_URL}).", "use_different_key", demo=True)
         cleaned, privacy = clean_windows_hosts(_raw(assets))
         now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
         for h in cleaned:

@@ -2,7 +2,15 @@
 
 All notable changes to the BreachSpider MCP server. This project follows [Semantic Versioning](https://semver.org/).
 
-## 0.1.3 (unreleased)
+## 0.1.4 (2026-10-01)
+
+Includes everything below from 0.1.3, which was a TestPyPI-only build and was not released to PyPI.
+
+### Fixed
+- `check_windows_host` in demo mode: the refusal now tells the agent that demo mode cannot do this and to start a
+  free trial, instead of saying the API key was refused.
+
+## 0.1.3 (TestPyPI only)
 
 ### Added
 - **Retry guidance on every failed tool call.** The error starts with one plain sentence the agent acts on (for

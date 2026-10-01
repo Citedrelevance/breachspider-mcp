@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "breachspider-mcp"
-version = "0.1.3"
+version = "0.1.4"
 description = "Read-only MCP server for the BreachSpider ICS/OT device CVE API"
 readme = "README.md"
 requires-python = ">=3.10"

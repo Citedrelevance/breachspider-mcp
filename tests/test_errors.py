@@ -272,6 +272,7 @@ def test_local_failures_carry_guidance(keyed_server, demo_server, mocked):
         "os_product": "Windows Server 2019 Standard", "edition_id": "ServerStandard", "os_build": "10.0.17763.6189",
         "architecture": "x64"}]})
     assert err and _guidance_line(msg)["action"] == "use_different_key"
+    assert _text(msg).startswith("Do not retry this call; demo mode cannot do this.") and "was refused" not in msg
 
 
 def test_descriptions_say_never_retry_when_not_retryable(keyed_server):
