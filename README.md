@@ -10,26 +10,47 @@ strings needed.
 
 ## Tools
 
-| Tool | What it does |
-| --- | --- |
-| `correlate_devices` | CVEs for each device at its exact version, in priority order, with the fix plan, coverage, warnings, `needs_review` and a `result_hash` |
-| `check_changes` | Cheap repeat check: send devices with their stored `result_hash`, get back which ones changed |
-| `get_fix_plan` | Fix groups and fix plan for one device |
-| `lookup_cve` | BreachSpider's record for one CVE, trimmed |
+| Tool | Arguments | What it does |
+| --- | --- | --- |
+| `correlate_devices` | `assets` (list of `vendor`, `product`, `version`, optional `asset_id`); optional `confirmed_only`, `known_exploited_only`, `fix_available_only`, `max_findings` | CVEs for each device at its exact version, in priority order, with the fix plan, coverage, warnings, `needs_review` and a `result_hash` |
+| `check_changes` | `assets` (as above, each with its stored `result_hash`) | Cheap repeat check: get back which devices changed |
+| `get_fix_plan` | `asset` (one `vendor`, `product`, `version`) | Fix groups and fix plan for one device |
+| `lookup_cve` | `cve_id` (for example `CVE-2024-9137`) | BreachSpider's record for one CVE, trimmed |
 
 All four are read only. They use the three endpoints a trial key can call:
 `POST /api/v1/assets/correlate-cves`, `POST /api/v1/assets/correlate-cves/check` and `GET /api/v1/cves/{id}`.
 
 ## Install
 
-Requires Python 3.10 or newer.
+Requires Python 3.10 or newer. Install with [pipx](https://pipx.pypa.io), which puts a `breachspider-mcp` command
+on your path.
 
-```bash
-pipx install breachspider-mcp
-```
+1. Install pipx and add its folder to your path:
 
-This puts a `breachspider-mcp` command on your path. Or run it without installing, with
-[uv](https://docs.astral.sh/uv/): `uvx breachspider-mcp`.
+   ```bash
+   # macOS
+   brew install pipx
+   pipx ensurepath
+
+   # Debian / Ubuntu
+   sudo apt install pipx
+   pipx ensurepath
+
+   # Windows (PowerShell)
+   py -m pip install --user pipx
+   py -m pipx ensurepath
+   ```
+
+2. Open a new terminal so the path change applies, then install:
+
+   ```bash
+   pipx install breachspider-mcp
+   ```
+
+### Option: run with uvx instead
+
+To run it without installing, install [uv](https://docs.astral.sh/uv/getting-started/installation/) first, then use
+`uvx breachspider-mcp` wherever this README uses `breachspider-mcp`.
 
 ## API key
 
@@ -37,7 +58,9 @@ Set `BREACHSPIDER_API_KEY` to your key. Get a free 14 day trial key at
 [breachspider.com/developers](https://breachspider.com/developers).
 
 With no key the server runs in **demo mode: public example access only**, using a short lived public demo token.
-Every result says so.
+Every result says so. For your own devices, start a free trial at
+[breachspider.com/developers](https://breachspider.com/developers); for partner keys, use "Talk to us" on the same
+page.
 
 The key is only read from the environment. It is never logged or returned in tool output.
 
@@ -45,11 +68,18 @@ The key is only read from the environment. It is never logged or returned in too
 
 ### Claude Code
 
+With the key in your shell's `BREACHSPIDER_API_KEY` variable:
+
 ```bash
-claude mcp add breachspider -e BREACHSPIDER_API_KEY=bs_live_your_key -- uvx breachspider-mcp
+claude mcp add breachspider -e BREACHSPIDER_API_KEY="$BREACHSPIDER_API_KEY" -- breachspider-mcp
 ```
 
+If you use uv instead of pipx, end the command with `-- uvx breachspider-mcp`.
+
 Add `--scope user` to make it available in every project. Leave out `-e ...` for demo mode.
+
+Claude Code stores the key in its MCP config, and `claude mcp get breachspider` prints it in plain text. Don't run
+that command while sharing your screen or recording, and don't paste its output anywhere.
 
 ### Claude Desktop
 

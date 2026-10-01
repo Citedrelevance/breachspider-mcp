@@ -2,6 +2,19 @@
 
 All notable changes to the BreachSpider MCP server. This project follows [Semantic Versioning](https://semver.org/).
 
+## 0.1.2 (unreleased)
+
+### Fixed
+- An `asset_id` is now sent only when it is clearly neutral (`asset-7`, `device_12`, `42` or a UUID). Short host
+  names such as `plant-a-sw01` used to pass through unchanged; they are now replaced with `asset-N` like other
+  identifying ids.
+
+### Changed
+- In demo mode, the message for a call that needs a key now points to both the free trial at
+  breachspider.com/developers and partner keys through "Talk to us".
+- README: every tool's arguments, pipx install steps per OS with `pipx ensurepath`, uvx as a separate option,
+  the Claude Code command reads the key from `$BREACHSPIDER_API_KEY`, and a warning that `claude mcp get` prints it.
+
 ## 0.1.1 (2026-10-01)
 
 ### Changed

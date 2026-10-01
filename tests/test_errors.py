@@ -127,6 +127,7 @@ def test_demo_forbidden_mentions_demo(demo_server, mocked):
     mocked.add(responses.POST, CORRELATE, json=error_body("FORBIDDEN", "nope"), status=403)
     err, msg = call(demo_server, "correlate_devices", ASSET)
     assert err and "demo mode: public example access only" in msg
+    assert "free trial at https://breachspider.com/developers" in msg and "partner keys, talk to us" in msg
 
 
 def test_key_never_echoed_even_if_server_does(keyed_server, mocked):

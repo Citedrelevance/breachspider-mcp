@@ -143,8 +143,9 @@ def error_message(e: Exception, demo: bool = False) -> str:
                 f"Keys are managed at {DEVELOPERS_URL}.")
     if status == 403:
         if demo:
-            return (f"This is not available in {DEMO_NOTICE}. Set BREACHSPIDER_API_KEY to a trial key "
-                    f"from {DEVELOPERS_URL}.")
+            return (f"This is not available in {DEMO_NOTICE}. For your own devices, start a free trial at "
+                    f"{DEVELOPERS_URL} and set BREACHSPIDER_API_KEY to the trial key. For partner keys, "
+                    f"talk to us: {CONTACT_URL}")
         return f"Not allowed for this key (403): {server_msg}{rid}"
     if status == 404:
         return f"Not found: {server_msg}{rid}"
