@@ -4,6 +4,14 @@ All notable changes to the BreachSpider MCP server. This project follows [Semant
 
 ## 0.1.2 (unreleased)
 
+### Added
+- `check_windows_host`: check Windows hosts (OS product, edition, build, architecture, installed updates) against
+  Microsoft's own patch data through `POST /api/v2/assets/check-windows`, which stores nothing about the hosts.
+  Returns an honest assessment per host (a host that is not patch resolved is never called clean, and needs review
+  is reported), counts, the top open and needs review CVEs with fixed build, KB and Microsoft source, fix groups and
+  a `result_hash`. Only the Windows host fields are sent; identifying fields are stripped and reported. Needs a
+  partner or customer key; in demo mode it explains that without calling the API. At most 25 hosts per call.
+
 ### Fixed
 - An `asset_id` is now sent only when it is clearly neutral (`asset-7`, `device_12`, `42` or a UUID). Short host
   names such as `plant-a-sw01` used to pass through unchanged; they are now replaced with `asset-N` like other

@@ -1,6 +1,7 @@
 """Keep identifying data out of API requests.
 
-Only vendor, product, version, asset_id (and result_hash for check_changes) ever leave this machine. Any other
+Only vendor, product, version, asset_id (and result_hash for check_changes) ever leave this machine; for
+check_windows_host only the Windows host fields in WINDOWS_FIELDS do. Any other
 field an agent passes along is dropped, and the fields that look identifying are named in the output so the
 user can see what was held back. An asset_id is sent only when it is clearly neutral (asset-7, device_12, 42 or a
 UUID); anything else, such as a host name like plant-a-sw01, an IP or MAC address or an email, is replaced with a
@@ -104,4 +105,33 @@ def clean_assets(assets: Iterable[Any], extra_fields: Tuple[str, ...] = ()) -> T
             "asset_ids": replaced_ids,
             "reason": "the submitted asset_id was not a neutral id such as asset-7 and could be a host name, address or email, so a neutral id was sent",
         }
+    return cleaned, report
+
+
+# check_windows_host: the Windows host contract fields that are sent. Everything else is dropped as above.
+WINDOWS_FIELDS = ("asset_id", "os_product", "edition_id", "os_build", "architecture", "installation_type",
+                  "display_version", "installed_kbs", "esu_enrolled")
+
+
+def clean_windows_hosts(hosts: Iterable[Any]) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    """clean_assets for Windows hosts: the same dropping, reporting and asset_id replacement, but only
+    WINDOWS_FIELDS are sent, installed_kbs stays a list of KB strings and esu_enrolled a yes/no."""
+    raws = [h if isinstance(h, dict) else dict(h) for h in hosts]
+    kbs = [r.get("installed_kbs") for r in raws]
+    esu = [r.get("esu_enrolled") for r in raws]
+    stripped = [{k: v for k, v in r.items() if k not in ("installed_kbs", "esu_enrolled")} for r in raws]
+    cleaned, report = clean_assets(stripped, extra_fields=WINDOWS_FIELDS)
+    extra_ignored = set()
+    for c, k, e in zip(cleaned, kbs, esu):
+        for f in SENT_FIELDS:                  # vendor / product / version are not Windows host fields
+            if f != "asset_id" and c.pop(f, None) is not None:
+                extra_ignored.add(f)
+        if k is not None:
+            items = k if isinstance(k, (list, tuple)) else str(k).replace(",", ";").split(";")
+            c["installed_kbs"] = [str(x).strip().upper() if str(x).strip().upper().startswith("KB")
+                                  else "KB" + str(x).strip() for x in items if str(x).strip()]
+        if e is not None:
+            c["esu_enrolled"] = "yes" if (e is True or str(e).strip().lower() in ("yes", "true")) else "no"
+    if extra_ignored:
+        report["ignored_fields"] = sorted(set(report.get("ignored_fields", [])) | extra_ignored)
     return cleaned, report

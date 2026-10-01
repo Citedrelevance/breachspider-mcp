@@ -289,3 +289,84 @@ def cve_record(d: Dict[str, Any]) -> Dict[str, Any]:
                               "cve_org": refs.get("cve_org_url")}),
         "note": "Device specific findings (affected range for a given version, fix plan) come from correlate_devices.",
     })
+
+
+# ------------------------------------------------------------ check_windows_host (stateless API v2)
+
+MAX_GROUP_IDS = 10
+
+
+def windows_assessment(h: Dict[str, Any]) -> str:
+    """One honest sentence per Windows host. Never calls a host clean unless it resolved to a Microsoft build and
+    has no open or needs review CVEs, and even then says what that means."""
+    counts = h.get("counts") or {}
+    open_, review, cleared = counts.get("confirmed_open", 0), counts.get("needs_review", 0), counts.get("cleared", 0)
+    if not h.get("patch_resolved"):
+        why = ", ".join(h.get("labels") or []) or "not resolved to a Microsoft build"
+        msg = (f"Not assessed at patch level ({why}). No per-CVE decision was made for this host, so this is not "
+               f"a clean result. Send the full os_build including the revision number, the edition_id and, for "
+               f"servers, the installation_type.")
+    elif open_ or review:
+        parts = []
+        if open_:
+            parts.append(f"{open_} CVE{'' if open_ == 1 else 's'} confirmed open")
+        if review:
+            parts.append(f"{review} need{'s' if review == 1 else ''} review (Microsoft's data does not decide them for "
+                         f"this build; confirm before treating them as open or fixed)")
+        msg = "; ".join(parts) + f". {cleared} cleared by installed updates."
+    else:
+        msg = (f"No open or needs review CVEs for this build in Microsoft's data ({cleared} cleared). This covers "
+               f"Microsoft's published Windows CVEs for this exact build, not third party software on the host.")
+    if h.get("end_of_life"):
+        msg += " This Windows version is end of life: fixes after end of support need Extended Security Updates."
+    return msg
+
+
+def windows_finding(c: Dict[str, Any]) -> Dict[str, Any]:
+    fx = c.get("fix") or {}
+    return _drop_empty({
+        "cve_id": c.get("cve_id"),
+        "status": c.get("status"),
+        "known_exploited": c.get("known_exploited"),
+        "severity": c.get("severity"),
+        "fixed_build": c.get("fixed_build"),
+        "kb": c.get("kb"),
+        "fix": fx.get("action"),
+        "microsoft_source": c.get("source"),
+        "note": cap(c.get("note")),
+        "why_this_rank": cap(c.get("priority_reason")),
+    })
+
+
+def windows_fix_groups(groups: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    out = []
+    for g in groups or []:
+        ids = g.get("cve_ids") or []
+        out.append(_drop_empty({
+            "fix": g.get("fix"), "fix_type": g.get("fix_type"), "source": g.get("source"),
+            "cve_count": len(ids), "cve_ids": ids[:MAX_GROUP_IDS],
+            "more_cve_ids": len(ids) - MAX_GROUP_IDS if len(ids) > MAX_GROUP_IDS else None,
+            "counts": g.get("counts"),
+        }))
+    return out
+
+
+def windows_host_result(h: Dict[str, Any]) -> Dict[str, Any]:
+    page = h.get("cves_page") or {}
+    cves = h.get("cves") or []
+    return _drop_empty({
+        "asset_id": h.get("asset_id"),
+        "microsoft_product": h.get("microsoft_product"),
+        "candidate_products": h.get("candidate_products"),
+        "patch_resolved": bool(h.get("patch_resolved")),
+        "end_of_life": bool(h.get("end_of_life")) or None,
+        "labels": h.get("labels") or None,
+        "assessment": windows_assessment(h),
+        "counts": h.get("counts"),
+        "findings_shown": len(cves),
+        "findings_total": page.get("total", len(cves)),
+        "findings": [windows_finding(c) for c in cves],
+        "fix_groups": windows_fix_groups(h.get("fix_groups") or []),
+        "result_hash": h.get("result_hash"),
+        "warnings": [cap(w.get("message")) for w in h.get("warnings") or []] or None,
+    })

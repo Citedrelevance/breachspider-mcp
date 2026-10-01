@@ -14,9 +14,9 @@ def _sent(mocked, i=-1):
 
 # ------------------------------------------------------------ listing
 
-def test_four_tools_listed_read_only(keyed_server):
+def test_five_tools_listed_read_only(keyed_server):
     tools = {t.name: t for t in list_tools(keyed_server)}
-    assert set(tools) == {"correlate_devices", "check_changes", "get_fix_plan", "lookup_cve"}
+    assert set(tools) == {"correlate_devices", "check_changes", "get_fix_plan", "lookup_cve", "check_windows_host"}
     for t in tools.values():
         assert t.annotations.read_only_hint is True
         assert t.annotations.destructive_hint is False
@@ -251,3 +251,64 @@ def test_demo_token_refreshed_once_on_401(demo_server, mocked):
     err, out = call(demo_server, "correlate_devices", {"assets": [{"vendor": "Moxa", "product": "EDS-518A"}]})
     assert not err and out["results"][0]["total"] == 3
     assert sum(c.request.url.endswith("/auth/demo-token") for c in mocked.calls) == 2
+
+
+# ------------------------------------------------------------ check_windows_host
+
+WINDOWS = f"{BASE}/api/v2/assets/check-windows"
+WIN_HOST = {"os_product": "Windows Server 2019 Standard", "edition_id": "ServerStandard", "os_build": "10.0.17763.6189",
+            "architecture": "x64", "installation_type": "Server", "installed_kbs": ["5041578"]}
+
+
+def test_check_windows_host_description_says_stores_nothing(keyed_server):
+    t = {t.name: t for t in list_tools(keyed_server)}["check_windows_host"]
+    d = t.description
+    assert "without storing anything" in d and "needs review" in d and "never call them clean" in d
+    assert t.annotations.read_only_hint is True
+    props = t.input_schema["properties"]
+    assert props["assets"]["maxItems"] == 25
+
+
+def test_check_windows_host_shape_and_request(keyed_server, mocked):
+    mocked.add(responses.POST, WINDOWS, json=fixture("check_windows.json"))
+    err, out = call(keyed_server, "check_windows_host", {"assets": [
+        {**WIN_HOST, "asset_id": "asset-1"},
+        {**WIN_HOST, "asset_id": "asset-2", "os_build": "10.0.22631"}], "max_findings": 3})
+    assert not err
+    sent = _sent(mocked)
+    assert sent["options"] == {"include_cleared": False, "cve_page": 1, "cve_page_size": 3, "sort": "priority"}
+    h = sent["windows_hosts"][0]
+    assert h["installed_kbs"] == ["KB5041578"] and h["kb_source"] == "reported" and h["collected_at"].endswith("Z")
+    assert out["stored"] is False and "Nothing about these hosts was stored" in out["note"]
+    ok, unresolved = out["results"]
+    assert ok["patch_resolved"] is True and ok["counts"]["needs_review"] == 3
+    assert "need review" in ok["assessment"] and "confirmed open" in ok["assessment"]
+    assert len(ok["findings"]) == 3 and ok["findings"][0]["known_exploited"] is True
+    assert all(len(g.get("cve_ids", [])) <= 10 for g in ok["fix_groups"])
+    assert unresolved["patch_resolved"] is False and "not a clean result" in unresolved["assessment"]
+
+
+def test_check_windows_host_strips_identifying_fields(keyed_server, mocked):
+    mocked.add(responses.POST, WINDOWS, json=fixture("check_windows.json"))
+    _, out = call(keyed_server, "check_windows_host", {"assets": [{
+        **WIN_HOST, "asset_id": "plant-a-sw01", "hostname": "srv-01.plant.example.com", "ip_address": "10.1.2.3",
+        "user": "jdoe", "vendor": "Microsoft", "notes": "core server"}]})
+    body = mocked.calls[-1].request.body.decode()
+    for secret in ("plant-a-sw01", "srv-01", "10.1.2.3", "jdoe", "core server", "vendor"):
+        assert secret not in body
+    p = out["privacy"]
+    assert set(p["dropped_identifying_fields"]) == {"hostname", "ip_address", "user"}
+    assert set(p["ignored_fields"]) == {"notes", "vendor"}
+    assert p["asset_ids_replaced"]["asset_ids"] == ["asset-1"]
+
+
+def test_check_windows_host_refused_in_demo_mode_without_calling(demo_server, mocked):
+    err, msg = call(demo_server, "check_windows_host", {"assets": [WIN_HOST]})
+    assert err and "demo mode" in msg and "partner or customer API key" in msg
+    assert not any("check-windows" in c.request.url for c in mocked.calls)
+
+
+def test_check_windows_host_more_than_25_refused(keyed_server, mocked):
+    err, msg = call(keyed_server, "check_windows_host", {"assets": [WIN_HOST] * 26})
+    assert err
+    assert len(mocked.calls) == 0

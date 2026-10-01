@@ -5,12 +5,15 @@ Four tools over the three endpoints a trial key can call:
     check_changes      POST /api/v1/assets/correlate-cves/check
     get_fix_plan       POST /api/v1/assets/correlate-cves (one asset, fix data only)
     lookup_cve         GET  /api/v1/cves/{cve_id}
+and one that needs a partner or customer key (stateless, stores nothing):
+    check_windows_host POST /api/v2/assets/check-windows
 """
 
 from __future__ import annotations
 
+import datetime as dt
 import re
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List, Literal, Optional
 
 import anyio
 from pydantic import BaseModel, ConfigDict, Field
@@ -25,10 +28,12 @@ except ImportError:  # mcp 1.x
 from mcp.types import ToolAnnotations
 
 from . import __version__, shaping
-from .api import API, CHECK_PATH, CORRELATE_PATH, DEMO_NOTICE, ToolFailure
-from .safety import clean_assets
+from .api import API, CHECK_PATH, CORRELATE_PATH, DEMO_NOTICE, DEVELOPERS_URL, CONTACT_URL, ToolFailure
+from .safety import clean_assets, clean_windows_hosts
 
 MAX_FINDINGS = 100
+WINDOWS_PATH = "/api/v2/assets/check-windows"
+MAX_WINDOWS_HOSTS = 25
 _CVE_ID = re.compile(r"^CVE-\d{4}-\d{4,}$")
 
 INSTRUCTIONS = """\
@@ -42,6 +47,8 @@ inventory says. No CPE is needed.
 repeat the assessment field in your answer.
 * When explaining a finding, cite the affected_range source and the vendor advisory.
 * Use check_changes for repeat checks of devices you already have a result_hash for. It is much cheaper.
+* Use check_windows_host for Windows machines (OS product, edition, build, architecture, installed updates). \
+It stores nothing. Report needs review and hosts that are not patch resolved honestly; never call them clean.
 * Never send host names, IP or MAC addresses, user names or site names. Identifying fields are stripped \
 before sending and reported in privacy.dropped_identifying_fields.
 """
@@ -62,6 +69,22 @@ class Device(BaseModel):
 
 class DeviceWithHash(Device):
     result_hash: str = Field(description="The result_hash returned by an earlier correlate_devices call for this device.")
+
+
+class WindowsHost(BaseModel):
+    """One Windows host. Only the Windows host fields are sent; anything else is dropped."""
+
+    model_config = ConfigDict(extra="allow")
+
+    os_product: str = Field(description="Windows product name as reported, for example 'Windows Server 2019 Standard'.")
+    edition_id: str = Field(description="EditionID, for example 'ServerStandard', 'ServerDatacenter', 'Enterprise' or 'Professional'.")
+    os_build: str = Field(description="Full build including the revision number, for example '10.0.17763.6189'.")
+    architecture: Literal["x64", "x86", "arm64"] = Field(description="x64, x86 or arm64.")
+    installed_kbs: Optional[List[str]] = Field(default=None, description="Installed updates as KB numbers, for example ['KB5041578']. Leave out if unknown.")
+    installation_type: Optional[Literal["Server", "Server Core", "Client"]] = Field(default=None, description="Required for server editions: Server or Server Core.")
+    esu_enrolled: Optional[bool] = Field(default=None, description="True when the host is enrolled in Extended Security Updates.")
+    display_version: Optional[str] = Field(default=None, description="Optional display version, for example '23H2'.")
+    asset_id: Optional[str] = Field(default=None, description="Optional neutral id to map results back, for example 'asset-7' or '42'. Any other id, such as a host name or address, is replaced with asset-N.")
 
 
 def _raw(items) -> List[Dict[str, Any]]:
@@ -229,6 +252,51 @@ def build_server(api: Optional[API] = None) -> Any:
         body = await _call(api, "GET", f"/api/v1/cves/{cid}")
         data = body.get("data") if isinstance(body.get("data"), dict) else body
         return _envelope(api, shaping.cve_record(data), {})
+
+    @mcp.tool(
+        annotations=_READ_ONLY,
+        structured_output=False,
+        description=(
+            "Check Windows hosts against Microsoft's own patch data, without storing anything: nothing about the "
+            "hosts is saved by BreachSpider. Send per host the OS product, edition_id, the full os_build (with the "
+            "revision number), the architecture and, if known, the installed updates as KB numbers. Returns per host "
+            "an honest assessment, counts of CVEs confirmed open, cleared and needs review, the top open and needs "
+            "review findings in priority order (known-exploited first) with the fixed build, KB and Microsoft "
+            "source, the fix groups (which update clears which CVEs) and a result_hash. Report needs review and "
+            "hosts that are not patch resolved honestly: never call them clean, and repeat the assessment. Needs a "
+            "partner or customer API key; trial keys and demo mode cannot use it. At most 25 hosts per call. Never "
+            "send host names, IP or MAC addresses, user names or site names; such fields are stripped and listed "
+            "under privacy."
+        ),
+    )
+    async def check_windows_host(
+        assets: Annotated[List[WindowsHost], Field(min_length=1, max_length=MAX_WINDOWS_HOSTS, description="Windows hosts to check, at most 25.")],
+        max_findings: Annotated[int, Field(ge=1, le=MAX_FINDINGS, description="Open and needs review findings returned per host, highest priority first.")] = 25,
+    ) -> Dict[str, Any]:
+        if api.demo:
+            raise ToolError(f"check_windows_host is not available in {DEMO_NOTICE}, and trial keys cannot use it "
+                            f"either. It needs a partner or customer API key in BREACHSPIDER_API_KEY. Talk to us: "
+                            f"{CONTACT_URL} (developer page: {DEVELOPERS_URL}).")
+        cleaned, privacy = clean_windows_hosts(_raw(assets))
+        collected = dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+        for h in cleaned:
+            h["collected_at"] = collected
+            if h.get("installed_kbs") is not None:
+                h["kb_source"] = "reported"
+        body = await _call(api, "POST", WINDOWS_PATH, {
+            "windows_hosts": cleaned,
+            "options": {"include_cleared": False, "cve_page": 1, "cve_page_size": max_findings, "sort": "priority"}})
+        data = body.get("data") or {}
+        rejected = [{"asset_id": r.get("asset_id"),
+                     "errors": [shaping.cap(e.get("message")) for e in r.get("errors") or []]}
+                    for r in data.get("rejected") or []]
+        return _envelope(api, {
+            "stored": False,
+            "note": "Nothing about these hosts was stored. Findings list open and needs review CVEs only; cleared "
+                    "CVEs are counted, not listed.",
+            "results": [shaping.windows_host_result(h) for h in data.get("assets") or []],
+            **({"rejected": rejected} if rejected else {}),
+        }, privacy)
 
     return mcp
 

@@ -16,9 +16,12 @@ strings needed.
 | `check_changes` | `assets` (as above, each with its stored `result_hash`) | Cheap repeat check: get back which devices changed |
 | `get_fix_plan` | `asset` (one `vendor`, `product`, `version`) | Fix groups and fix plan for one device |
 | `lookup_cve` | `cve_id` (for example `CVE-2024-9137`) | BreachSpider's record for one CVE, trimmed |
+| `check_windows_host` | `assets` (list of `os_product`, `edition_id`, `os_build`, `architecture`, optional `installed_kbs`, `installation_type`, `esu_enrolled`, `display_version`, `asset_id`); optional `max_findings` | Windows hosts against Microsoft's own patch data, stored nowhere: confirmed open, cleared and needs review counts, the top open and needs review CVEs with fixed build, KB and Microsoft source, fix groups and a `result_hash` |
 
-All four are read only. They use the three endpoints a trial key can call:
+All five are read only. The first four use the three endpoints a trial key can call:
 `POST /api/v1/assets/correlate-cves`, `POST /api/v1/assets/correlate-cves/check` and `GET /api/v1/cves/{id}`.
+`check_windows_host` uses `POST /api/v2/assets/check-windows`, which stores nothing about the hosts and needs a
+partner or customer key; trial keys and demo mode cannot use it. It takes at most 25 hosts per call.
 
 ## Install
 
@@ -121,12 +124,19 @@ Add the same block to `~/.cursor/mcp.json` (all projects) or `.cursor/mcp.json` 
 The agent calls `correlate_devices` and answers with three CVEs, all fixed by security patch 3.11.2, citing
 Moxa advisory MPSA-241156.
 
+> Is our Windows Server 2019 Standard on build 10.0.17763.6189 with KB5041578 installed missing any security
+> updates? Which known-exploited CVEs are still open, and which update closes them?
+
+The agent calls `check_windows_host`, reports the confirmed open count, the known-exploited CVEs first, the
+cumulative update that clears them, and any CVEs that need review. Nothing about the host is stored.
+
 ## Privacy
 
 Only `vendor`, `product`, `version` and an optional `asset_id` (plus `result_hash` for `check_changes`) are sent.
 Any other field is dropped before the request. Fields that look identifying (host name, IP or MAC address, user,
 site, location, serial number and similar) are listed in the output under `privacy.dropped_identifying_fields`.
-An `asset_id` is sent only when it is clearly neutral: a generic prefix and a number (`asset-7`, `device_12`, `42`)
+For `check_windows_host`, only the Windows host fields listed in the tools table are sent, and the same
+identifying-field rules apply. An `asset_id` is sent only when it is clearly neutral: a generic prefix and a number (`asset-7`, `device_12`, `42`)
 or a UUID. Anything else, including short host names such as `plant-a-sw01`, IP or MAC addresses and emails, is
 replaced with a neutral id such as `asset-1`.
 
