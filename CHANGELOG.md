@@ -2,7 +2,7 @@
 
 All notable changes to the BreachSpider MCP server. This project follows [Semantic Versioning](https://semver.org/).
 
-## 0.1.2 (unreleased)
+## 0.1.2 (2026-10-01)
 
 ### Added
 - `check_windows_host`: check Windows hosts (OS product, edition, build, architecture, installed updates) against
