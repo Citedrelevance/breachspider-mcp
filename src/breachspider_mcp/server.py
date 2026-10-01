@@ -64,7 +64,7 @@ class Device(BaseModel):
     vendor: str = Field(description="Vendor exactly as the inventory says, for example 'Moxa'.")
     product: str = Field(description="Product or model exactly as the inventory says, for example 'EDS-518A'.")
     version: Optional[str] = Field(default=None, description="Firmware or software version as written, for example 'V3.5'.")
-    asset_id: Optional[str] = Field(default=None, description="Optional neutral id to map results back, for example 'asset-7' or '42'. Any other id, such as a host name or address, is replaced with asset-N.")
+    asset_id: Optional[str] = Field(default=None, description="Optional id to map results back, for example your asset tag 'PLC-LINE-2' or 'asset-7'. An id that contains an IP, MAC or email address or is a host name with a domain is replaced with asset-N.")
 
 
 class DeviceWithHash(Device):
@@ -84,7 +84,7 @@ class WindowsHost(BaseModel):
     installation_type: Optional[Literal["Server", "Server Core", "Client"]] = Field(default=None, description="Required for server editions: Server or Server Core.")
     esu_enrolled: Optional[bool] = Field(default=None, description="True when the host is enrolled in Extended Security Updates.")
     display_version: Optional[str] = Field(default=None, description="Optional display version, for example '23H2'.")
-    asset_id: Optional[str] = Field(default=None, description="Optional neutral id to map results back, for example 'asset-7' or '42'. Any other id, such as a host name or address, is replaced with asset-N.")
+    asset_id: Optional[str] = Field(default=None, description="Optional id to map results back, for example your asset tag 'PLC-LINE-2' or 'asset-7'. An id that contains an IP, MAC or email address or is a host name with a domain is replaced with asset-N.")
 
 
 def _raw(items) -> List[Dict[str, Any]]:

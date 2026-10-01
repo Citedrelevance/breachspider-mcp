@@ -13,9 +13,9 @@ All notable changes to the BreachSpider MCP server. This project follows [Semant
   partner or customer key; in demo mode it explains that without calling the API. At most 25 hosts per call.
 
 ### Fixed
-- An `asset_id` is now sent only when it is clearly neutral (`asset-7`, `device_12`, `42` or a UUID). Short host
-  names such as `plant-a-sw01` used to pass through unchanged; they are now replaced with `asset-N` like other
-  identifying ids.
+- `asset_id` replacement now matches the API: an id that contains an IP, MAC or email address, or is a domain name
+  (for example `plant.local`) or a fully qualified host name, is replaced with `asset-N`. Tag-shaped ids such as
+  `PLC-LINE-2` or `plant-a-sw01` are kept, so results map back to your own equipment.
 
 ### Changed
 - In demo mode, the message for a call that needs a key now points to both the free trial at

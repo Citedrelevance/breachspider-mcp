@@ -136,9 +136,9 @@ Only `vendor`, `product`, `version` and an optional `asset_id` (plus `result_has
 Any other field is dropped before the request. Fields that look identifying (host name, IP or MAC address, user,
 site, location, serial number and similar) are listed in the output under `privacy.dropped_identifying_fields`.
 For `check_windows_host`, only the Windows host fields listed in the tools table are sent, and the same
-identifying-field rules apply. An `asset_id` is sent only when it is clearly neutral: a generic prefix and a number (`asset-7`, `device_12`, `42`)
-or a UUID. Anything else, including short host names such as `plant-a-sw01`, IP or MAC addresses and emails, is
-replaced with a neutral id such as `asset-1`.
+identifying-field rules apply. An `asset_id` that contains an IP, MAC or email address, or is a domain or fully qualified host name (for example
+`10.20.30.40` or `sw-core-1.plant.example.com`), is replaced with a neutral id such as `asset-1`. Tag-shaped ids such
+as `PLC-LINE-2` or `plant-a-sw01` are kept, so results map back to your own equipment.
 
 ## Honest results
 

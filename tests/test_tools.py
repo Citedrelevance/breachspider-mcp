@@ -128,9 +128,9 @@ def test_identifying_fields_stripped_and_reported(keyed_server, mocked):
 
 
 @pytest.mark.parametrize("asset_id", [
-    "plant-a-sw01", "sw01", "PLC-LINE2", "hmi-north-3", "10.20.30.40", "fe80::1", "00:90:e8:12:34:56",
-    "0090.e812.3456", "jdoe@example.com", "sw-core-1.plant.example.com", "x" * 200])
-def test_non_neutral_asset_id_replaced(keyed_server, mocked, asset_id):
+    "10.20.30.40", "srv 10.1.2.3", "fe80::1", "00:90:e8:12:34:56", "0090.e812.3456", "jdoe@example.com",
+    "example.com", "plant.local", "sw-core-1.plant.example.com", "x" * 200])
+def test_identifying_asset_id_replaced(keyed_server, mocked, asset_id):
     mocked.add(responses.POST, CORRELATE, json=fixture("correlate_eds518a.json"))
     _, out = call(keyed_server, "correlate_devices", {"assets": [{
         "vendor": "Moxa", "product": "EDS-518A", "version": "3.5", "asset_id": asset_id}]})
@@ -140,9 +140,10 @@ def test_non_neutral_asset_id_replaced(keyed_server, mocked, asset_id):
 
 
 @pytest.mark.parametrize("asset_id", [
-    "asset-7", "asset_7", "Device-12", "dev12", "node 3", "42", "asset-7#2",
-    "3f2b8c1e-1d2a-4b5c-9e8f-0a1b2c3d4e5f"])
-def test_neutral_asset_id_kept(keyed_server, mocked, asset_id):
+    "asset-7", "asset_7", "Device-12", "42", "asset-7#2", "3f2b8c1e-1d2a-4b5c-9e8f-0a1b2c3d4e5f",
+    # tag-shaped ids are kept: they map results back to the customer's own equipment
+    "PLC-LINE-2", "plant-a-sw01", "sw01", "hmi-north-3", "PLC7", "Line 2 HMI", "PLC.v2"])
+def test_neutral_and_tag_asset_id_kept(keyed_server, mocked, asset_id):
     mocked.add(responses.POST, CORRELATE, json=fixture("correlate_eds518a.json"))
     _, out = call(keyed_server, "correlate_devices", {"assets": [{
         "vendor": "Moxa", "product": "EDS-518A", "version": "3.5", "asset_id": asset_id}]})
@@ -291,10 +292,10 @@ def test_check_windows_host_shape_and_request(keyed_server, mocked):
 def test_check_windows_host_strips_identifying_fields(keyed_server, mocked):
     mocked.add(responses.POST, WINDOWS, json=fixture("check_windows.json"))
     _, out = call(keyed_server, "check_windows_host", {"assets": [{
-        **WIN_HOST, "asset_id": "plant-a-sw01", "hostname": "srv-01.plant.example.com", "ip_address": "10.1.2.3",
+        **WIN_HOST, "asset_id": "srv-01.plant.example.com", "hostname": "srv-02", "ip_address": "10.1.2.3",
         "user": "jdoe", "vendor": "Microsoft", "notes": "core server"}]})
     body = mocked.calls[-1].request.body.decode()
-    for secret in ("plant-a-sw01", "srv-01", "10.1.2.3", "jdoe", "core server", "vendor"):
+    for secret in ("srv-01", "srv-02", "10.1.2.3", "jdoe", "core server", "vendor"):
         assert secret not in body
     p = out["privacy"]
     assert set(p["dropped_identifying_fields"]) == {"hostname", "ip_address", "user"}
@@ -312,3 +313,10 @@ def test_check_windows_host_more_than_25_refused(keyed_server, mocked):
     err, msg = call(keyed_server, "check_windows_host", {"assets": [WIN_HOST] * 26})
     assert err
     assert len(mocked.calls) == 0
+
+
+def test_check_windows_host_keeps_tag_asset_id(keyed_server, mocked):
+    mocked.add(responses.POST, WINDOWS, json=fixture("check_windows.json"))
+    _, out = call(keyed_server, "check_windows_host", {"assets": [{**WIN_HOST, "asset_id": "PLC-LINE-2"}]})
+    assert _sent(mocked)["windows_hosts"][0]["asset_id"] == "PLC-LINE-2"
+    assert "asset_ids_replaced" not in out.get("privacy", {})
