@@ -289,6 +289,17 @@ def test_check_windows_host_shape_and_request(keyed_server, mocked):
     assert unresolved["patch_resolved"] is False and "not a clean result" in unresolved["assessment"]
 
 
+def test_check_windows_host_passes_collected_at_through(keyed_server, mocked):
+    mocked.add(responses.POST, WINDOWS, json=fixture("check_windows.json"))
+    err, _ = call(keyed_server, "check_windows_host", {"assets": [
+        {**WIN_HOST, "asset_id": "asset-1", "collected_at": "2026-09-25T14:02:00Z"},
+        {**WIN_HOST, "asset_id": "asset-2"}]})
+    assert not err
+    first, second = _sent(mocked)["windows_hosts"]
+    assert first["collected_at"] == "2026-09-25T14:02:00Z"
+    assert second["collected_at"].endswith("Z") and second["collected_at"] != "2026-09-25T14:02:00Z"
+
+
 def test_check_windows_host_strips_identifying_fields(keyed_server, mocked):
     mocked.add(responses.POST, WINDOWS, json=fixture("check_windows.json"))
     _, out = call(keyed_server, "check_windows_host", {"assets": [{

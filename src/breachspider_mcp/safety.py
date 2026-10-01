@@ -119,7 +119,7 @@ def clean_assets(assets: Iterable[Any], extra_fields: Tuple[str, ...] = ()) -> T
 
 # check_windows_host: the Windows host contract fields that are sent. Everything else is dropped as above.
 WINDOWS_FIELDS = ("asset_id", "os_product", "edition_id", "os_build", "architecture", "installation_type",
-                  "display_version", "installed_kbs", "esu_enrolled")
+                  "display_version", "installed_kbs", "esu_enrolled", "collected_at")
 
 
 def clean_windows_hosts(hosts: Iterable[Any]) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:

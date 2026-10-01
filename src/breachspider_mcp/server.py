@@ -28,7 +28,7 @@ except ImportError:  # mcp 1.x
 from mcp.types import ToolAnnotations
 
 from . import __version__, shaping
-from .api import API, CHECK_PATH, CORRELATE_PATH, DEMO_NOTICE, DEVELOPERS_URL, CONTACT_URL, ToolFailure
+from .api import API, CHECK_PATH, CORRELATE_PATH, DEMO_NOTICE, DEVELOPERS_URL, CONTACT_URL, ToolFailure, format_failure
 from .safety import clean_assets, clean_windows_hosts
 
 MAX_FINDINGS = 100
@@ -49,6 +49,9 @@ repeat the assessment field in your answer.
 * Use check_changes for repeat checks of devices you already have a result_hash for. It is much cheaper.
 * Use check_windows_host for Windows machines (OS product, edition, build, architecture, installed updates). \
 It stores nothing. Report needs review and hosts that are not patch resolved honestly; never call them clean.
+* When a tool call fails, read the retry_guidance at the end of the error. Never retry when retryable is false; \
+follow action instead (fix_input, reduce_batch, use_different_key, contact_us, wait_until_reset). When retryable \
+is true, wait retry_after_seconds before retrying.
 * Never send host names, IP or MAC addresses, user names or site names. Identifying fields are stripped \
 before sending and reported in privacy.dropped_identifying_fields.
 """
@@ -84,6 +87,7 @@ class WindowsHost(BaseModel):
     installation_type: Optional[Literal["Server", "Server Core", "Client"]] = Field(default=None, description="Required for server editions: Server or Server Core.")
     esu_enrolled: Optional[bool] = Field(default=None, description="True when the host is enrolled in Extended Security Updates.")
     display_version: Optional[str] = Field(default=None, description="Optional display version, for example '23H2'.")
+    collected_at: Optional[str] = Field(default=None, description="When these facts were collected from the host, ISO 8601 UTC, for example '2026-09-25T14:02:00Z'. Leave out to use the time of this call.")
     asset_id: Optional[str] = Field(default=None, description="Optional id to map results back, for example your asset tag 'PLC-LINE-2' or 'asset-7'. An id that contains an IP, MAC or email address or is a host name with a domain is replaced with asset-N.")
 
 
@@ -113,10 +117,15 @@ async def _call(api: API, method: str, path: str, json: Optional[Dict[str, Any]]
     try:
         return await anyio.to_thread.run_sync(lambda: api.request(method, path, json=json))
     except ToolFailure as e:
-        msg = str(e)
+        msg = e.message
         if api.demo and DEMO_NOTICE not in msg:
             msg = f"{msg} ({DEMO_NOTICE})"
-        raise ToolError(msg) from None
+        raise ToolError(format_failure(e.sentence, msg, e.guidance)) from None
+
+
+def _fail(message: str, action: str) -> ToolError:
+    """A failure found before calling the API: not retryable, with the same retry guidance as API errors."""
+    return ToolError(str(ToolFailure(message, {"retryable": False, "retry_after_seconds": None, "action": action})))
 
 
 def _correlate_body(assets, *, page_size: int, confirmed_only=False, known_exploited_only=False,
@@ -149,6 +158,9 @@ def build_server(api: Optional[API] = None) -> Any:
             "explaining it. Report needs_review and partial coverage honestly and never call an empty, unresolved "
             "or partial result clean. Never send host names, IP or MAC addresses, user names or site names; such "
             "fields are stripped and listed under privacy."
+
+            " If a call fails, the error starts with what to do and ends with retry_guidance (retryable, "
+            "retry_after_seconds, action): never retry when retryable is false."
         ),
     )
     async def correlate_devices(
@@ -180,6 +192,9 @@ def build_server(api: Optional[API] = None) -> Any:
             "product and version plus the result_hash you kept. Returns which devices changed and their new hash; "
             "only changed devices need a fresh correlate_devices call. Use this for repeat checks. Never send host "
             "names, IP or MAC addresses, user names or site names."
+
+            " If a call fails, the error starts with what to do and ends with retry_guidance (retryable, "
+            "retry_after_seconds, action): never retry when retryable is false."
         ),
     )
     async def check_changes(
@@ -188,8 +203,8 @@ def build_server(api: Optional[API] = None) -> Any:
         cleaned, privacy = clean_assets(_raw(assets), extra_fields=("result_hash",))
         missing = [a["asset_id"] for a in cleaned if not a.get("result_hash")]
         if missing:
-            raise ToolError("Every asset needs a result_hash from an earlier correlate_devices call. Missing for: "
-                            + ", ".join(missing))
+            raise _fail("Every asset needs a result_hash from an earlier correlate_devices call. Missing for: "
+                        + ", ".join(missing), "fix_input")
         body = await _call(api, "POST", CHECK_PATH, {"assets": cleaned})
         rows = (body.get("data") or {}).get("results") or []
         results = [{"asset_id": r.get("asset_id"), "changed": bool(r.get("changed")),
@@ -211,6 +226,9 @@ def build_server(api: Optional[API] = None) -> Any:
             "that clears the known-exploited CVEs, and the one that clears everything fixable). Send vendor, product "
             "and version exactly as the inventory says. Says so plainly when the device did not resolve or coverage "
             "is partial. Never send host names, IP or MAC addresses, user names or site names."
+
+            " If a call fails, the error starts with what to do and ends with retry_guidance (retryable, "
+            "retry_after_seconds, action): never retry when retryable is false."
         ),
     )
     async def get_fix_plan(
@@ -220,7 +238,7 @@ def build_server(api: Optional[API] = None) -> Any:
         body = await _call(api, "POST", CORRELATE_PATH, _correlate_body(cleaned, page_size=1))
         rows = (body.get("data") or {}).get("results") or []
         if not rows:
-            raise ToolError("The API returned no result for this device.")
+            raise _fail("The API returned no result for this device.", "contact_us")
         r = rows[0]
         res = r.get("resolution") or {}
         total = (r.get("cves_page") or {}).get("total", len(r.get("cves") or []))
@@ -241,6 +259,9 @@ def build_server(api: Optional[API] = None) -> Any:
             "Look up one CVE by id (for example CVE-2024-9137) and return BreachSpider's record, trimmed: severity, "
             "CVSS, known-exploited status, EPSS, fix status, vendor and CISA ICS advisories and links. It is not "
             "device specific; to know whether a device is affected, use correlate_devices."
+
+            " If a call fails, the error starts with what to do and ends with retry_guidance (retryable, "
+            "retry_after_seconds, action): never retry when retryable is false."
         ),
     )
     async def lookup_cve(
@@ -248,7 +269,7 @@ def build_server(api: Optional[API] = None) -> Any:
     ) -> Dict[str, Any]:
         cid = (cve_id or "").strip().upper()
         if not _CVE_ID.match(cid):
-            raise ToolError(f"'{cap_id(cve_id)}' is not a CVE id. Use the form CVE-2024-9137.")
+            raise _fail(f"'{cap_id(cve_id)}' is not a CVE id. Use the form CVE-2024-9137.", "fix_input")
         body = await _call(api, "GET", f"/api/v1/cves/{cid}")
         data = body.get("data") if isinstance(body.get("data"), dict) else body
         return _envelope(api, shaping.cve_record(data), {})
@@ -267,6 +288,9 @@ def build_server(api: Optional[API] = None) -> Any:
             "partner or customer API key; trial keys and demo mode cannot use it. At most 25 hosts per call. Never "
             "send host names, IP or MAC addresses, user names or site names; such fields are stripped and listed "
             "under privacy."
+
+            " If a call fails, the error starts with what to do and ends with retry_guidance (retryable, "
+            "retry_after_seconds, action): never retry when retryable is false."
         ),
     )
     async def check_windows_host(
@@ -274,13 +298,13 @@ def build_server(api: Optional[API] = None) -> Any:
         max_findings: Annotated[int, Field(ge=1, le=MAX_FINDINGS, description="Open and needs review findings returned per host, highest priority first.")] = 25,
     ) -> Dict[str, Any]:
         if api.demo:
-            raise ToolError(f"check_windows_host is not available in {DEMO_NOTICE}, and trial keys cannot use it "
-                            f"either. It needs a partner or customer API key in BREACHSPIDER_API_KEY. Talk to us: "
-                            f"{CONTACT_URL} (developer page: {DEVELOPERS_URL}).")
+            raise _fail(f"check_windows_host is not available in {DEMO_NOTICE}, and trial keys cannot use it "
+                        f"either. It needs a partner or customer API key in BREACHSPIDER_API_KEY. Talk to us: "
+                        f"{CONTACT_URL} (developer page: {DEVELOPERS_URL}).", "use_different_key")
         cleaned, privacy = clean_windows_hosts(_raw(assets))
-        collected = dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+        now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
         for h in cleaned:
-            h["collected_at"] = collected
+            h.setdefault("collected_at", now)       # the caller's collection time when given; the API validates it
             if h.get("installed_kbs") is not None:
                 h["kb_source"] = "reported"
         body = await _call(api, "POST", WINDOWS_PATH, {

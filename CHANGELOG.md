@@ -2,6 +2,24 @@
 
 All notable changes to the BreachSpider MCP server. This project follows [Semantic Versioning](https://semver.org/).
 
+## 0.1.3 (unreleased)
+
+### Added
+- **Retry guidance on every failed tool call.** The error starts with one plain sentence the agent acts on (for
+  example "Retry after 30 seconds." or "Do not retry this call; the trial has ended. Tell the user to start a new
+  trial or ask for a partner key.") and ends with a `retry_guidance` line carrying the API's `retryable`,
+  `retry_after_seconds` and `action` (plus `reset_at` and `max` where they exist). Failures found before calling
+  the API (a malformed CVE id, a missing result_hash, Windows in demo mode) carry the same fields. The instructions
+  and every tool description say never to retry when `retryable` is false. Requires `breachspider>=0.3.2`.
+
+### Changed
+- Rate limit and server error messages no longer repeat when to retry; the leading sentence says it. The trial
+  limit message no longer suggests retrying.
+
+### Fixed
+- `check_windows_host` now sends the `collected_at` you give for a host (when the facts were collected, ISO 8601 UTC)
+  instead of ignoring it and always sending the time of the call. Without it, the time of the call is still used.
+
 ## 0.1.2 (2026-10-01)
 
 ### Added

@@ -201,3 +201,80 @@ def test_house_style_error_messages(keyed_server, mocked):
         assert err
         for name, rx in _BANNED:
             assert not rx.search(msg), f"{name} in: {msg}"
+
+
+# -- retry guidance (0.1.3): every failure starts with one sentence the agent acts on and ends with retry_guidance --
+
+import json as _json
+
+
+def _guided(code, message, retryable, action, after=None, detail=None, **extra):
+    body = error_body(code, message, detail)
+    body["error"].update({"retryable": retryable, "retry_after_seconds": after, "action": action, **extra})
+    return body
+
+
+def _text(msg):
+    return msg.split(": ", 1)[1] if msg.startswith("Error executing tool ") else msg
+
+
+def _guidance_line(msg):
+    line = msg.rsplit("\nretry_guidance: ", 1)
+    assert len(line) == 2, msg
+    return _json.loads(line[1])
+
+
+@pytest.mark.parametrize("status,body,sentence,guide", [
+    (429, _guided("RATE_LIMITED", "Per-key limit.", True, "retry_later", 30, {"retry_after": 30}),
+     "Retry after 30 seconds.", {"retryable": True, "retry_after_seconds": 30, "action": "retry_later"}),
+    (503, _guided("ERROR", "Database unavailable", True, "retry_later", 30),
+     "Retry after 30 seconds.", {"retryable": True, "action": "retry_later"}),
+    (500, {"error": {"code": "INTERNAL_ERROR", "message": "x"}},          # no guidance: derived from the status
+     "Retry after a few seconds.", {"retryable": True, "action": "retry_later"}),
+    (429, _guided("PARTNER_LIMIT", "Needs 25 checks.", False, "wait_until_reset", reset_at="2026-11-01",
+                  detail={"code": "PARTNER_LIMIT", "resets_at": "2026-11-01"}),
+     "Do not retry this call before 2026-11-01;", {"retryable": False, "action": "wait_until_reset",
+                                                   "reset_at": "2026-11-01"}),
+    (403, _guided("TRIAL_ENDED", "Trial over.", False, "contact_us", detail={"code": "TRIAL_ENDED", "reason": "expired"}),
+     "Do not retry this call; the trial has ended. Tell the user to start a new trial or ask for a partner key.",
+     {"retryable": False, "action": "contact_us"}),
+    (429, _guided("TRIAL_ENDED", "Used up.", False, "contact_us", detail={"code": "TRIAL_ENDED", "reason": "limit"}),
+     "Do not retry this call; the trial's asset checks are used up", {"retryable": False, "action": "contact_us"}),
+    (403, _guided("PARTNER_SCOPE", "This key can call ...", False, "contact_us", detail={"code": "PARTNER_SCOPE"}),
+     "Do not retry this call; this key cannot use this endpoint.", {"retryable": False, "action": "contact_us"}),
+    (413, _guided("BATCH_TOO_LARGE", "At most 25.", False, "reduce_batch", max=25,
+                  detail={"code": "BATCH_TOO_LARGE", "max": 25, "received": 30}),
+     "split the list into batches of at most 25", {"retryable": False, "action": "reduce_batch", "max": 25}),
+    (422, _guided("VALIDATION_ERROR", "Request validation failed.", False, "fix_input"),
+     "Do not retry this call unchanged; correct the input", {"retryable": False, "action": "fix_input"}),
+    (401, _guided("AUTH_REQUIRED", "API key expired", False, "use_different_key"),
+     "Do not retry this call; the API key was refused.", {"retryable": False, "action": "use_different_key"}),
+    (403, _guided("TRIAL_REQUIRED", "Needs a trial.", False, "use_different_key", detail={"code": "TRIAL_REQUIRED"}),
+     "checking your own devices needs a trial key", {"retryable": False, "action": "use_different_key"}),
+])
+def test_failure_starts_with_agent_sentence_and_ends_with_guidance(keyed_server, mocked, status, body, sentence, guide):
+    msg = _text(_err(keyed_server, mocked, status, body))
+    first = msg.split(". ", 1)[0] if msg.startswith("Retry") else msg.split(". ", 2)[:2]
+    assert msg.startswith(("Retry after ", "Do not retry this call")), msg      # the sentence comes first
+    assert sentence.rstrip(".") in ". ".join(first if isinstance(first, list) else [first]), msg
+    g = _guidance_line(msg)
+    assert set(("retryable", "retry_after_seconds", "action")) <= set(g)
+    for k, v in guide.items():
+        assert g[k] == v, (k, g)
+    assert len(mocked.calls) == 1                       # the MCP server never retries on its own
+
+
+def test_local_failures_carry_guidance(keyed_server, demo_server, mocked):
+    err, msg = call(keyed_server, "lookup_cve", {"cve_id": "not-a-cve"})
+    assert err and _text(msg).startswith("Do not retry this call unchanged")
+    assert _guidance_line(msg) == {"retryable": False, "retry_after_seconds": None, "action": "fix_input"}
+    err, msg = call(demo_server, "check_windows_host", {"assets": [{
+        "os_product": "Windows Server 2019 Standard", "edition_id": "ServerStandard", "os_build": "10.0.17763.6189",
+        "architecture": "x64"}]})
+    assert err and _guidance_line(msg)["action"] == "use_different_key"
+
+
+def test_descriptions_say_never_retry_when_not_retryable(keyed_server):
+    for t in list_tools(keyed_server):
+        assert "never retry when retryable is false" in t.description, t.name
+    assert "Never retry when retryable is false" in INSTRUCTIONS

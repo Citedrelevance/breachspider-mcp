@@ -6,6 +6,7 @@ only inside the SDK client, which never renders it. With no key the server mints
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import threading
@@ -24,7 +25,17 @@ CHECK_PATH = "/api/v1/assets/correlate-cves/check"
 
 
 class ToolFailure(Exception):
-    """A clear, user facing error message. Never carries the key."""
+    """A clear, user facing error message plus the API's retry guidance. Never carries the key.
+
+    str() is the full text the agent sees: one plain sentence telling it what to do, the explanation, and a
+    retry_guidance line with retryable, retry_after_seconds and action (plus reset_at and max where they exist).
+    """
+
+    def __init__(self, message: str, guidance: Optional[Dict[str, Any]] = None, sentence: str = "") -> None:
+        self.message = message
+        self.guidance = guidance or {"retryable": False, "retry_after_seconds": None, "action": None}
+        self.sentence = sentence or agent_sentence(self.guidance)
+        super().__init__(format_failure(self.sentence, message, self.guidance))
 
 
 class API:
@@ -57,7 +68,7 @@ class API:
                 try:
                     self._client = self._build()
                 except bs_exc.BreachSpiderError as e:
-                    raise ToolFailure(self._message(e)) from None
+                    raise self._failure(e) from None
             return self._client
 
     def request(self, method: str, path: str, json: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -69,10 +80,10 @@ class API:
                 try:
                     return self._get(fresh=True).request(method, path, json=json)
                 except bs_exc.BreachSpiderError as e2:
-                    raise ToolFailure(self._message(e2)) from None
-            raise ToolFailure(self._message(e)) from None
+                    raise self._failure(e2) from None
+            raise self._failure(e) from None
         except bs_exc.BreachSpiderError as e:
-            raise ToolFailure(self._message(e)) from None
+            raise self._failure(e) from None
 
     def _redact(self, text: str) -> str:
         if self._key and self._key in text:
@@ -81,6 +92,69 @@ class API:
 
     def _message(self, e: Exception) -> str:
         return self._redact(error_message(e, demo=self.demo))
+
+    def _failure(self, e: Exception) -> ToolFailure:
+        g = guidance_of(e)
+        return ToolFailure(self._message(e), g, self._redact(agent_sentence(g, e, demo=self.demo)))
+
+
+def guidance_of(e: Exception) -> Dict[str, Any]:
+    """retryable / retry_after_seconds / action from an SDK exception (0.3.2 carries them on every exception),
+    plus reset_at and max where the API sent them."""
+    g = {"retryable": bool(getattr(e, "retryable", False)),
+         "retry_after_seconds": getattr(e, "retry_after_seconds", None),
+         "action": getattr(e, "action", None)}
+    if getattr(e, "reset_at", None):
+        g["reset_at"] = e.reset_at
+    detail = getattr(e, "detail", None)
+    if isinstance(detail, dict) and detail.get("max") is not None:
+        g["max"] = detail["max"]
+    return g
+
+
+def agent_sentence(g: Dict[str, Any], e: Optional[Exception] = None, demo: bool = False) -> str:
+    """One plain sentence the agent will act on: retry after a wait, or do not retry and what to tell the user."""
+    action = g.get("action")
+    code = (getattr(e, "code", None) or "").upper()
+    detail = getattr(e, "detail", None)
+    detail = detail if isinstance(detail, dict) else {}
+    if g.get("retryable"):
+        after = g.get("retry_after_seconds")
+        return f"Retry after {after} seconds." if after else "Retry after a few seconds."
+    if action == "wait_until_reset":
+        reset = g.get("reset_at")
+        return ("Do not retry this call" + (f" before {reset}" if reset else " until the limit resets")
+                + "; this key's monthly asset checks are used up. Tell the user, or ask us for a higher limit.")
+    if action == "reduce_batch":
+        mx = g.get("max")
+        return ("Do not retry this call unchanged; split the list into batches of "
+                + (f"at most {mx}" if mx else "fewer items") + " and call again.")
+    if action == "contact_us":
+        if code == "TRIAL_ENDED" and detail.get("reason") == "limit":
+            return ("Do not retry this call; the trial's asset checks are used up and do not reset. "
+                    "Tell the user to ask for a partner key.")
+        if code == "TRIAL_ENDED":
+            return ("Do not retry this call; the trial has ended. "
+                    "Tell the user to start a new trial or ask for a partner key.")
+        if code in ("PARTNER_SCOPE", "TRIAL_SCOPE"):
+            return ("Do not retry this call; this key cannot use this endpoint. "
+                    "Tell the user to ask BreachSpider for a key with wider access.")
+        return "Do not retry this call. Tell the user to contact BreachSpider."
+    if action == "use_different_key":
+        if demo:
+            return ("Do not retry this call; demo mode cannot do this. "
+                    "Tell the user to start a free trial and set BREACHSPIDER_API_KEY to the trial key.")
+        if code == "TRIAL_REQUIRED":
+            return ("Do not retry this call; checking your own devices needs a trial key. "
+                    "Tell the user to start a free trial and set BREACHSPIDER_API_KEY to the trial key.")
+        return "Do not retry this call; the API key was refused. Tell the user to check BREACHSPIDER_API_KEY."
+    if action == "fix_input":
+        return "Do not retry this call unchanged; correct the input as described and call again."
+    return "Do not retry this call unchanged."
+
+
+def format_failure(sentence: str, message: str, g: Dict[str, Any]) -> str:
+    return f"{sentence} {message}\nretry_guidance: {json.dumps(g)}"
 
 
 def _trial_links(detail: Dict[str, Any]) -> str:
@@ -91,7 +165,7 @@ def _trial_links(detail: Dict[str, Any]) -> str:
 def error_message(e: Exception, demo: bool = False) -> str:
     """Turn an SDK exception into one clear sentence or two, in house style."""
     if isinstance(e, bs_exc.APIConnectionError):
-        return "Could not reach the BreachSpider API. Check the network connection and try again."
+        return "Could not reach the BreachSpider API. Check the network connection."
     if not isinstance(e, bs_exc.APIError):
         return "The BreachSpider API request failed."
 
@@ -128,8 +202,6 @@ def error_message(e: Exception, demo: bool = False) -> str:
                 parts.append("Send fewer assets, or use check_changes for repeat checks, which costs a tenth as much.")
             if ends:
                 parts.append(f"The allowance does not reset during the trial. The trial ends at {ends}.")
-            if getattr(e, "retry_after", None):
-                parts.append(f"Retry after {int(e.retry_after)} seconds.")
             parts.append(_trial_links(detail))
             return " ".join(parts)
         ended_at = detail.get("ended_at")
@@ -155,12 +227,10 @@ def error_message(e: Exception, demo: bool = False) -> str:
                 + ". Split the list and call again.")
     if status == 422:
         return f"The API rejected the request: {server_msg}{rid}"
-    if status == 429:
-        wait = getattr(e, "retry_after", None)
-        return ("Rate limited by the API (429)." + (f" Retry after {int(wait)} seconds." if wait else
-                " Wait a few seconds and retry."))
+    if status == 429:                           # the agent sentence in front says when to retry
+        return f"Rate limited by the API (429).{rid}"
     if status >= 500:
-        return f"The BreachSpider API had a server error ({status}). Try again shortly.{rid}"
+        return f"The BreachSpider API had a server error ({status}).{rid}"
     return f"The API returned an error ({status}): {server_msg}{rid}"
 
 

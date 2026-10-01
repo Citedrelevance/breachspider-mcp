@@ -153,6 +153,18 @@ API errors come back as plain messages, including `TRIAL_REQUIRED`, `TRIAL_SCOPE
 ends) and `TRIAL_ENDED`, each with a link to the developer page and a way to talk to us. `check_changes` costs a
 tenth of a device check, so use it for repeat checks.
 
+Every failed tool call starts with one sentence the agent acts on and ends with the API's retry guidance:
+
+```
+Do not retry this call; the trial has ended. Tell the user to start a new trial or ask for a partner key. TRIAL_ENDED: ...
+retry_guidance: {"retryable": false, "retry_after_seconds": null, "action": "contact_us"}
+```
+
+`retryable` is true only when the same call may succeed later (then the sentence is "Retry after N seconds.");
+`action` is one of `retry_later`, `wait_until_reset`, `reduce_batch`, `fix_input`, `use_different_key` and
+`contact_us`. The tool descriptions tell the agent never to retry when `retryable` is false. The server itself never
+retries.
+
 ## Development
 
 ```bash
