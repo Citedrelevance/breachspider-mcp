@@ -2,6 +2,16 @@
 
 All notable changes to the BreachSpider MCP server. This project follows [Semantic Versioning](https://semver.org/).
 
+## 0.1.5 (2026-10-20)
+
+### Added
+- `correlate_devices`, on client plans: each device carries `lifecycle` (the vendor's end of sale / end of support,
+  in the API's own wording, with `source_url`, the vendor's term, replacement and, for aggregator answers, `listed_by`)
+  and `firmware` (current / behind, latest version and date, releases behind, up to 5 security notes from the
+  releases it misses). Findings carry `unsupported_when_assigned` when the CVE record has that tag, attributed to
+  its assigner. The call adds `lifecycle_and_firmware` (counts, unsupported devices, firmware ranking, notices).
+- Trial and demo keys are unchanged: the API sends no such blocks, and the tool adds no empty keys.
+
 ## 0.1.4 (2026-10-01)
 
 Includes everything below from 0.1.3, which was a TestPyPI-only build and was not released to PyPI.

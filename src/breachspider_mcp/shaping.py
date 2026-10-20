@@ -124,6 +124,82 @@ def finding(c: Dict[str, Any]) -> Dict[str, Any]:
         "advisory_guidance": _guidance(c.get("advisory_guidance") or []),
         "vendor_advisories": _vendor_advisories(refs),
         "cisa_ics_advisories": _cisa(refs),
+        "unsupported_when_assigned": _uwa(c.get("unsupported_when_assigned")),
+    })
+
+
+def _uwa(flag: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """The CVE record's 'unsupported when assigned' tag, attributed to whoever set it (often a third party)."""
+    if not flag:
+        return None
+    return _drop_empty({"assigner": flag.get("assigner"), "text": cap(flag.get("text"), 300),
+                        "source_url": flag.get("source_url")})
+
+
+# ---------------------------------------------------------------- lifecycle and firmware currency
+
+MAX_SECURITY_NOTES = 5
+
+
+def lifecycle(blk: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """The device's end-of-life / end-of-support answer, as the API words it, with its sources."""
+    if not blk:
+        return None
+    eos = blk.get("end_of_support") or {}
+    facts = blk.get("facts") or {}
+    sale = facts.get("end_of_sale") or {}
+    rep = facts.get("replacement") or {}
+    lb = eos.get("listed_by") or {}
+    return _drop_empty({
+        "end_of_support": eos.get("answer"),
+        "date": eos.get("date"),
+        "reason": eos.get("reason"),
+        "text": cap(eos.get("text"), 400),
+        "support_status": blk.get("support_status"),
+        "support_text": cap(blk.get("support_text"), 300),
+        "source_url": eos.get("source_url"),
+        "listed_by": _drop_empty({"name": lb.get("name"), "url": lb.get("url"), "cites_url": lb.get("cites_url"),
+                                  "attribution": lb.get("attribution")}) or None,
+        "end_of_sale": _drop_empty({"status": sale.get("status"), "date": sale.get("date"),
+                                    "vendor_term": sale.get("native_term"), "source_url": sale.get("source_url")}) or None,
+        "replacement": rep.get("products") or None,
+        "editions": len(blk.get("editions") or []) or None,
+        "matched_part_number": (blk.get("matched_catalog_item") or {}).get("model"),
+        "as_of": blk.get("as_of"),
+    })
+
+
+def firmware(blk: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Firmware currency: is the device on the vendor's latest listed release, and what security notes it misses."""
+    if not blk:
+        return None
+    notes = blk.get("security_notes") or []
+    return _drop_empty({
+        "status": blk.get("status"),
+        "reason": blk.get("reason"),
+        "text": cap(blk.get("text"), 300),
+        "latest_version": blk.get("latest_version"),
+        "latest_release_date": blk.get("latest_release_date"),
+        "releases_behind": blk.get("releases_behind"),
+        "release_notes_url": blk.get("release_notes_url"),
+        "security_notes_total": len(notes) or None,
+        "security_notes": [_drop_empty({"version": n.get("version"), "release_date": n.get("release_date"),
+                                        "quote": cap(n.get("quote"), 200), "cve_ids": n.get("cve_ids") or None})
+                           for n in notes[:MAX_SECURITY_NOTES]] or None,
+    })
+
+
+def lifecycle_summary(summary: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    lc, fw, fl = summary.get("lifecycle"), summary.get("firmware_currency"), summary.get("unsupported_when_assigned")
+    if not (lc or fw or fl):
+        return None
+    return _drop_empty({
+        "lifecycle_by_support_status": (lc or {}).get("by_support_status"),
+        "unsupported_devices": (lc or {}).get("unsupported") or None,
+        "firmware": _drop_empty({k: (fw or {}).get(k) for k in ("current", "behind", "behind_with_security_notes", "unknown")}) or None,
+        "firmware_ranked": ((fw or {}).get("ranked") or [])[:10] or None,
+        "cves_unsupported_when_assigned": (fl or {}).get("cves_flagged"),
+        "notices": [n for n in ((lc or {}).get("notice"), (fw or {}).get("notice")) if n] or None,
     })
 
 
@@ -228,6 +304,11 @@ def asset_result(r: Dict[str, Any], filtered: bool) -> Dict[str, Any]:
         "fix_plan": fix_plan(r.get("fix_plan")),
         "findings": [finding(c) for c in cves],
     }
+    lc, fw = lifecycle(r.get("lifecycle")), firmware(r.get("firmware_currency"))
+    if lc:
+        out["lifecycle"] = lc
+    if fw:
+        out["firmware"] = fw
     if filtered and page.get("total_unfiltered") is not None:
         out["total_unfiltered"] = page.get("total_unfiltered")
     if status == "ambiguous":

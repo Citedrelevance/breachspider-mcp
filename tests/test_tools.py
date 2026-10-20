@@ -331,3 +331,30 @@ def test_check_windows_host_keeps_tag_asset_id(keyed_server, mocked):
     _, out = call(keyed_server, "check_windows_host", {"assets": [{**WIN_HOST, "asset_id": "PLC-LINE-2"}]})
     assert _sent(mocked)["windows_hosts"][0]["asset_id"] == "PLC-LINE-2"
     assert "asset_ids_replaced" not in out.get("privacy", {})
+
+
+def test_lifecycle_firmware_and_cve_flag_passed_through(keyed_server, mocked):
+    # 0.1.5: client plans get lifecycle, firmware currency and the CVE-record flag; the agent sees the API's own text.
+    mocked.add(responses.POST, CORRELATE, json=fixture("correlate_lifecycle.json"))
+    err, out = call(keyed_server, "correlate_devices", {"assets": [{"vendor": "Moxa", "product": "EDS-518A", "version": "V3.5"}]})
+    assert not err
+    r = out["results"][0]
+    lc, fw = r["lifecycle"], r["firmware"]
+    assert lc["end_of_support"] == "unknown" and lc["reason"] == "end_of_life_no_support_date"
+    assert lc["text"].startswith("Moxa lists this product as end of life (phased out)")
+    assert lc["source_url"].startswith("https://www.moxa.com/") and lc["replacement"] == ["AWK-1137C Series"]
+    assert fw["status"] == "behind" and fw["latest_version"] == "v3.14" and fw["releases_behind"] == 8
+    assert fw["security_notes_total"] >= len(fw["security_notes"]) and len(fw["security_notes"]) <= 5
+    flagged = [f for f in r["findings"] if f.get("unsupported_when_assigned")]
+    assert flagged and flagged[0]["unsupported_when_assigned"]["assigner"] == "VulDB"
+    s = out["lifecycle_and_firmware"]
+    assert s["firmware"]["behind"] == 1 and s["cves_unsupported_when_assigned"] == 1 and len(s["notices"]) == 2
+
+
+def test_no_lifecycle_keys_without_blocks(keyed_server, mocked):
+    # Trial and demo keys get no blocks from the API; the tool must not invent empty ones.
+    mocked.add(responses.POST, CORRELATE, json=fixture("correlate_eds518a.json"))
+    err, out = call(keyed_server, "correlate_devices", {"assets": [{"vendor": "Moxa", "product": "EDS-518A", "version": "V3.5"}]})
+    assert not err
+    assert "lifecycle" not in out["results"][0] and "firmware" not in out["results"][0]
+    assert "lifecycle_and_firmware" not in out

@@ -156,7 +156,11 @@ def build_server(api: Optional[API] = None) -> Any:
             "needs_review, result_hash (keep it for check_changes), the fix plan, and the top findings in priority "
             "order (known-exploited and confirmed first). Each finding gives the affected range with its source, the "
             "fix, advisory guidance and vendor advisories: cite the range source and the vendor advisory when "
-            "explaining it. Report needs_review and partial coverage honestly and never call an empty, unresolved "
+            "explaining it. On client plans each device also gets lifecycle (vendor end of sale / end of support: "
+            "quote its text and source_url; 'unknown' means the vendor publishes no date, never 'supported') and "
+            "firmware (current or behind, latest version, security notes from the releases it misses). Zero CVEs "
+            "on an unsupported device is not secure: future vulnerabilities will not be fixed. "
+            "Report needs_review and partial coverage honestly and never call an empty, unresolved "
             "or partial result clean. Never send host names, IP or MAC addresses, user names or site names; such "
             "fields are stripped and listed under privacy."
 
@@ -179,11 +183,15 @@ def build_server(api: Optional[API] = None) -> Any:
         data = body.get("data") or {}
         results = [shaping.asset_result(r, filtered) for r in data.get("results") or []]
         summary = data.get("summary") or {}
-        return _envelope(api, {
+        out = {
             "assets_checked": summary.get("total", len(results)),
             "by_status": summary.get("by_status"),
             "results": results,
-        }, privacy)
+        }
+        lcs = shaping.lifecycle_summary(summary)
+        if lcs:
+            out["lifecycle_and_firmware"] = lcs
+        return _envelope(api, out, privacy)
 
     @mcp.tool(
         annotations=_READ_ONLY,
