@@ -351,6 +351,16 @@ def test_lifecycle_firmware_and_cve_flag_passed_through(keyed_server, mocked):
     assert s["firmware"]["behind"] == 1 and s["cves_unsupported_when_assigned"] == 1 and len(s["notices"]) == 2
 
 
+def test_not_publicly_available_cites_pages_checked(keyed_server, mocked):
+    # 0.1.6: "Not publicly available" names the vendor page(s) read, so the agent can cite where no date is published.
+    mocked.add(responses.POST, CORRELATE, json=fixture("correlate_not_published.json"))
+    err, out = call(keyed_server, "correlate_devices", {"assets": [{"vendor": "Moxa", "product": "EDS-518A", "version": "V3.5"}]})
+    assert not err
+    lc = out["results"][0]["lifecycle"]
+    assert lc["reason"] == "not_publicly_available" and lc["checked_on"] == "2026-10-15"
+    assert lc["pages_checked"] == [lc["source_url"]] and lc["source_url"].startswith("https://www.moxa.com/")
+
+
 def test_no_lifecycle_keys_without_blocks(keyed_server, mocked):
     # Trial and demo keys get no blocks from the API; the tool must not invent empty ones.
     mocked.add(responses.POST, CORRELATE, json=fixture("correlate_eds518a.json"))

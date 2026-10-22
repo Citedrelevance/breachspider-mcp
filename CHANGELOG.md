@@ -2,6 +2,13 @@
 
 All notable changes to the BreachSpider MCP server. This project follows [Semantic Versioning](https://semver.org/).
 
+## 0.1.6 (2026-10-22)
+
+### Added
+- `correlate_devices`: a lifecycle answer of "Not publicly available" (`reason: not_publicly_available`) or
+  "under review" now carries `pages_checked` (up to 5 vendor pages that were read) and `checked_on`, and its
+  `source_url` is the first page checked, so the agent can cite where the vendor publishes no date.
+
 ## 0.1.5 (2026-10-20)
 
 ### Added

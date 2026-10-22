@@ -157,7 +157,10 @@ def lifecycle(blk: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         "text": cap(eos.get("text"), 400),
         "support_status": blk.get("support_status"),
         "support_text": cap(blk.get("support_text"), 300),
-        "source_url": eos.get("source_url"),
+        "source_url": eos.get("source_url") or (eos.get("pages_checked") or [None])[0],
+        # 0.1.6: "Not publicly available" / "under review" answers name the vendor pages that were read
+        "pages_checked": (eos.get("pages_checked") or [])[:5] or None,
+        "checked_on": eos.get("checked_on"),
         "listed_by": _drop_empty({"name": lb.get("name"), "url": lb.get("url"), "cites_url": lb.get("cites_url"),
                                   "attribution": lb.get("attribution")}) or None,
         "end_of_sale": _drop_empty({"status": sale.get("status"), "date": sale.get("date"),
