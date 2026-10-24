@@ -60,13 +60,14 @@ _READ_ONLY = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempoten
 
 
 class Device(BaseModel):
-    """One device from an inventory. Only these four fields are sent; anything else is dropped."""
+    """One device from an inventory. Only these five fields are sent; anything else is dropped."""
 
     model_config = ConfigDict(extra="allow")
 
     vendor: str = Field(description="Vendor exactly as the inventory says, for example 'Moxa'.")
     product: str = Field(description="Product or model exactly as the inventory says, for example 'EDS-518A'.")
     version: Optional[str] = Field(default=None, description="Firmware or software version as written, for example 'V3.5'.")
+    part_number: Optional[str] = Field(default=None, description="Optional vendor part, order or model number when the inventory holds it separately from the product name, for example 'IR809G-LTE-VZ-K9' or '3623-072202'. Matched exactly for end-of-life and firmware answers.")
     asset_id: Optional[str] = Field(default=None, description="Optional id to map results back, for example your asset tag 'PLC-LINE-2' or 'asset-7'. An id that contains an IP, MAC or email address or is a host name with a domain is replaced with asset-N.")
 
 

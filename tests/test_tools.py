@@ -368,3 +368,14 @@ def test_no_lifecycle_keys_without_blocks(keyed_server, mocked):
     assert not err
     assert "lifecycle" not in out["results"][0] and "firmware" not in out["results"][0]
     assert "lifecycle_and_firmware" not in out
+
+
+def test_part_number_sent_when_given(keyed_server, mocked):
+    # 0.1.7: part_number is passed through to the API when the inventory holds it; omitted when absent.
+    mocked.add(responses.POST, CORRELATE, json=fixture("correlate_eds518a.json"))
+    err, _ = call(keyed_server, "correlate_devices", {"assets": [{"vendor": "Moxa", "product": "EDS-518A", "version": "V3.5", "part_number": "EDS-518A-SS-SC"}]})
+    assert not err
+    assert _sent(mocked)["assets"][0]["part_number"] == "EDS-518A-SS-SC"
+    mocked.add(responses.POST, CORRELATE, json=fixture("correlate_eds518a.json"))
+    call(keyed_server, "correlate_devices", {"assets": [{"vendor": "Moxa", "product": "EDS-518A", "version": "V3.5"}]})
+    assert "part_number" not in _sent(mocked)["assets"][0]

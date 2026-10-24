@@ -14,7 +14,7 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, Iterable, List, Tuple
 
-SENT_FIELDS = ("asset_id", "vendor", "product", "version")
+SENT_FIELDS = ("asset_id", "vendor", "product", "version", "part_number")
 
 # Tokens that mark a field name as identifying. Matched per word, so "description" never matches "ip".
 _IDENTIFYING_TOKENS = frozenset({

@@ -2,6 +2,13 @@
 
 All notable changes to the BreachSpider MCP server. This project follows [Semantic Versioning](https://semver.org/).
 
+## 0.1.7 (2026-10-24)
+
+### Added
+- `correlate_devices`, `check_changes` and `get_fix_plan` accept an optional `part_number` per device (the vendor part,
+  order or model number when the inventory holds it apart from the product name). The API matches it exactly for
+  lifecycle and firmware answers and uses it to identify the product only when the product text does not resolve.
+
 ## 0.1.6 (2026-10-22)
 
 ### Added
