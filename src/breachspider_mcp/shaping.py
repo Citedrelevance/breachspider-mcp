@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
+from .warning_codes import warning_text
+
 MAX_TEXT = 300
 MAX_GUIDANCE = 3
 MAX_ADVISORIES = 3
@@ -300,7 +302,7 @@ def asset_result(r: Dict[str, Any], filtered: bool) -> Dict[str, Any]:
         "coverage": coverage,
         "assessment": assessment(status, coverage, total, needs_review, filtered),
         "needs_review": needs_review,
-        "warnings": [cap(w.get("message") or w.get("code"), 200) for w in r.get("warnings") or []],
+        "warnings": [cap(warning_text(w), 200) for w in r.get("warnings") or []],
         "result_hash": r.get("result_hash"),
         "total": total,
         "has_more": bool(page.get("has_more")),
@@ -452,5 +454,5 @@ def windows_host_result(h: Dict[str, Any]) -> Dict[str, Any]:
         "findings": [windows_finding(c) for c in cves],
         "fix_groups": windows_fix_groups(h.get("fix_groups") or []),
         "result_hash": h.get("result_hash"),
-        "warnings": [cap(w.get("message")) for w in h.get("warnings") or []] or None,
+        "warnings": [cap(warning_text(w)) for w in h.get("warnings") or []] or None,
     })
