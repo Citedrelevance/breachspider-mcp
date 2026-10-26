@@ -22,3 +22,7 @@ def test_asset_result_with_unknown_and_new_codes():
     out = asset_result(_r([{"code": "SOME_FUTURE_CODE"}, {"code": "PRODUCT_WIDE_MATCH", "message": "m"}]),
                        filtered=False)
     assert out["warnings"] == ["SOME_FUTURE_CODE", "m"]
+
+
+def test_version_not_used_for_resolution_known():
+    assert "R3.02.10" in warning_text({"code": "VERSION_NOT_USED_FOR_RESOLUTION"})

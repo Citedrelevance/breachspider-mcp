@@ -4,6 +4,7 @@ codes are passed through as the bare code, never an error."""
 
 WARNING_CODES = {
     'NO_VERSION_SUPPLIED': 'No version was sent; every CVE is PRODUCT_WIDE.',
+    'VERSION_NOT_USED_FOR_RESOLUTION': 'A version was sent but has no numeric form the resolver can use (for example R3.02.10); it was not used to identify the product and is still used for CVE matching.',
     'VERSION_FROM_FIRMWARE': 'No version; firmware_version was used for matching.',
     'PRODUCT_WIDE_MATCH': 'At least one CVE applies with no version bound.',
     'NO_CPE_DATA': 'No CVE data behind the resolved product; result undetermined.',

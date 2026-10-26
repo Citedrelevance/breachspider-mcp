@@ -2,6 +2,12 @@
 
 All notable changes to the BreachSpider MCP server. This project follows [Semantic Versioning](https://semver.org/).
 
+## 0.1.8 (2026-10-26)
+
+### Added
+- Known warning code `VERSION_NOT_USED_FOR_RESOLUTION`: a version was sent but has no numeric form the resolver can use
+  (for example `R3.02.10`); it is still used for CVE matching. Replaces `NO_VERSION_SUPPLIED` in that case.
+
 ## 0.1.7 (2026-10-24)
 
 ### Added
