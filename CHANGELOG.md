@@ -2,6 +2,16 @@
 
 All notable changes to the BreachSpider MCP server. This project follows [Semantic Versioning](https://semver.org/).
 
+## 0.1.9 (2026-10-27)
+
+### Added
+- `correlate_devices` returns `status_hash` and `status_facts` per device: the known-exploited flags of the matched
+  CVEs, lifecycle and firmware currency, and their hash.
+- `check_changes` accepts the stored `status_hash` and `status_facts` per device. The answer then lists
+  `status_changed` and, per device, `reasons` (for example a CVE newly known-exploited, an end of support date
+  published, a new firmware release) with `current_status_hash` and `current_status_facts`. A status can change while
+  the findings stay the same. Without `status_hash` the answer is as before.
+
 ## 0.1.8 (2026-10-26)
 
 ### Added

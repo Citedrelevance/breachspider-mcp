@@ -12,8 +12,8 @@ strings needed.
 
 | Tool | Arguments | What it does |
 | --- | --- | --- |
-| `correlate_devices` | `assets` (list of `vendor`, `product`, `version`, optional `asset_id`); optional `confirmed_only`, `known_exploited_only`, `fix_available_only`, `max_findings` | CVEs for each device at its exact version, in priority order, with the fix plan, coverage, warnings, `needs_review` and a `result_hash` |
-| `check_changes` | `assets` (as above, each with its stored `result_hash`) | Cheap repeat check: get back which devices changed |
+| `correlate_devices` | `assets` (list of `vendor`, `product`, `version`, optional `asset_id`); optional `confirmed_only`, `known_exploited_only`, `fix_available_only`, `max_findings` | CVEs for each device at its exact version, in priority order, with the fix plan, coverage, warnings, `needs_review`, a `result_hash` and a `status_hash` with its `status_facts` |
+| `check_changes` | `assets` (as above, each with its stored `result_hash`; optional `status_hash` and `status_facts`) | Cheap repeat check: get back which devices changed, and with `status_hash` which ones changed status (known-exploited, lifecycle, firmware currency) and why |
 | `get_fix_plan` | `asset` (one `vendor`, `product`, `version`) | Fix groups and fix plan for one device |
 | `lookup_cve` | `cve_id` (for example `CVE-2024-9137`) | BreachSpider's record for one CVE, trimmed |
 | `check_windows_host` | `assets` (list of `os_product`, `edition_id`, `os_build`, `architecture`, optional `installed_kbs`, `installation_type`, `esu_enrolled`, `display_version`, `asset_id`); optional `max_findings` | Windows hosts against Microsoft's own patch data, stored nowhere: confirmed open, cleared and needs review counts, the top open and needs review CVEs with fixed build, KB and Microsoft source, fix groups and a `result_hash` |
@@ -132,7 +132,7 @@ cumulative update that clears them, and any CVEs that need review. Nothing about
 
 ## Privacy
 
-Only `vendor`, `product`, `version` and an optional `asset_id` (plus `result_hash` for `check_changes`) are sent.
+Only `vendor`, `product`, `version` and an optional `asset_id` (plus `result_hash`, `status_hash` and the API's own `status_facts` for `check_changes`) are sent.
 Any other field is dropped before the request. Fields that look identifying (host name, IP or MAC address, user,
 site, location, serial number and similar) are listed in the output under `privacy.dropped_identifying_fields`.
 For `check_windows_host`, only the Windows host fields listed in the tools table are sent, and the same

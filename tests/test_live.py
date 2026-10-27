@@ -37,6 +37,7 @@ def test_live_moxa_eds518a(server):
     assert any(g.get("source_document") == "MPSA-241156" and g.get("fixed_versions", {}).get("EDS-518A Series") == "3.11.2"
                for g in first["advisory_guidance"])
     server.live_hash = r["result_hash"]
+    server.live_status = (r["status_hash"], r["status_facts"])
 
 
 def test_live_check_changes(server):
@@ -46,6 +47,10 @@ def test_live_check_changes(server):
     err, out = call(server, "check_changes", {"assets": [dict(EDS, result_hash=h)]})
     assert not err, out
     assert out["changed"] == [] and out["results"][0]["current_hash"] == h
+    sh, facts = server.live_status
+    err, out = call(server, "check_changes", {"assets": [dict(EDS, result_hash=h, status_hash=sh, status_facts=facts)]})
+    assert not err, out
+    assert out["status_changed"] == [] and out["results"][0]["current_status_hash"] == sh
 
 
 def test_live_fix_plan(server):

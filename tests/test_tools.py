@@ -167,6 +167,34 @@ def test_check_changes(keyed_server, mocked):
     assert out["privacy"]["dropped_identifying_fields"] == ["hostname"]
 
 
+def test_check_changes_status(keyed_server, mocked):
+    """Recorded live 2026-10-27: a2 sends an earlier status saved with CVE-2024-9137 known-exploited."""
+    mocked.add(responses.POST, CHECK, json=fixture("check_status.json"))
+    facts = {"v": 1, "known_exploited": ["CVE-2024-9137"], "lifecycle": None, "firmware_currency": None}
+    dev = {"vendor": "Moxa", "product": "EDS-518A", "version": "V3.5", "result_hash": "sha256:" + "a" * 64}
+    err, out = call(keyed_server, "check_changes", {"assets": [
+        dict(dev, asset_id="EXAMPLE-SWITCH-01", status_hash="sha256:" + "c" * 64),
+        dict(dev, asset_id="EXAMPLE-SWITCH-02", status_hash="sha256:" + "d" * 64, status_facts=facts)]})
+    assert not err, out
+    sent = _sent(mocked)["assets"]
+    assert "status_facts" not in sent[0] and sent[1]["status_facts"] == facts          # passed through as an object
+    assert sent[1]["status_hash"] == "sha256:" + "d" * 64
+    assert "status_facts" not in out.get("privacy", {}).get("ignored_fields", [])
+    assert out["changed"] == [] and out["status_changed"] == ["EXAMPLE-SWITCH-02"]
+    r = out["results"][1]
+    assert r["reasons"][0]["code"] == "NO_LONGER_KNOWN_EXPLOITED" and r["current_status_facts"]["v"] == 1
+    assert "status changed" in out["next_step"]
+
+
+def test_check_changes_facts_without_hash_not_sent(keyed_server, mocked):
+    mocked.add(responses.POST, CHECK, json=fixture("check.json"))
+    err, out = call(keyed_server, "check_changes", {"assets": [
+        {"asset_id": "a1", "vendor": "Moxa", "product": "EDS-518A", "result_hash": "sha256:aa",
+         "status_facts": {"v": 1, "known_exploited": [], "lifecycle": None, "firmware_currency": None}}]})
+    assert not err
+    assert "status_facts" not in _sent(mocked)["assets"][0] and "status_changed" not in out
+
+
 def test_check_changes_needs_hash(keyed_server, mocked):
     err, msg = call(keyed_server, "check_changes", {"assets": [
         {"vendor": "Moxa", "product": "EDS-518A", "result_hash": " "}]})

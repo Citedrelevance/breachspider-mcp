@@ -46,7 +46,9 @@ inventory says. No CPE is needed.
 * Report needs_review and partial coverage honestly. Never call an empty, unresolved or partial result clean; \
 repeat the assessment field in your answer.
 * When explaining a finding, cite the affected_range source and the vendor advisory.
-* Use check_changes for repeat checks of devices you already have a result_hash for. It is much cheaper.
+* Use check_changes for repeat checks of devices you already have a result_hash for. It is much cheaper. Send \
+the status_hash and status_facts you kept too: a status can change (a CVE becomes known-exploited, an end of support \
+date is published, new firmware ships) while the findings stay the same.
 * Use check_windows_host for Windows machines (OS product, edition, build, architecture, installed updates). \
 It stores nothing. Report needs review and hosts that are not patch resolved honestly; never call them clean.
 * When a tool call fails, read the retry_guidance at the end of the error. Never retry when retryable is false; \
@@ -73,6 +75,8 @@ class Device(BaseModel):
 
 class DeviceWithHash(Device):
     result_hash: str = Field(description="The result_hash returned by an earlier correlate_devices call for this device.")
+    status_hash: Optional[str] = Field(default=None, description="Optional: the status_hash from the same earlier result. Then the answer also says whether the status changed (known-exploited, lifecycle, firmware currency).")
+    status_facts: Optional[Dict[str, Any]] = Field(default=None, description="Optional: the status_facts from the same earlier result, unchanged. Then each status change is named in reasons.")
 
 
 class WindowsHost(BaseModel):
@@ -200,8 +204,10 @@ def build_server(api: Optional[API] = None) -> Any:
         description=(
             "Cheap repeat check. For devices you already checked with correlate_devices, send the same vendor, "
             "product and version plus the result_hash you kept. Returns which devices changed and their new hash; "
-            "only changed devices need a fresh correlate_devices call. Use this for repeat checks. Never send host "
-            "names, IP or MAC addresses, user names or site names."
+            "only changed devices need a fresh correlate_devices call. Also send the status_hash and status_facts "
+            "you kept: then status_changed lists devices whose known-exploited flags, lifecycle or firmware currency "
+            "changed with the same findings, and reasons names each change. Use this for repeat checks. Never send "
+            "host names, IP or MAC addresses, user names or site names."
 
             " If a call fails, the error starts with what to do and ends with retry_guidance (retryable, "
             "retry_after_seconds, action): never retry when retryable is false."
@@ -210,23 +216,48 @@ def build_server(api: Optional[API] = None) -> Any:
     async def check_changes(
         assets: Annotated[List[DeviceWithHash], Field(min_length=1, description="Devices with the result_hash from an earlier correlate_devices call.")],
     ) -> Dict[str, Any]:
-        cleaned, privacy = clean_assets(_raw(assets), extra_fields=("result_hash",))
+        raw = _raw(assets)
+        cleaned, privacy = clean_assets([{k: v for k, v in x.items() if k != "status_facts"} for x in raw],
+                                        extra_fields=("result_hash", "status_hash"))
         missing = [a["asset_id"] for a in cleaned if not a.get("result_hash")]
         if missing:
             raise _fail("Every asset needs a result_hash from an earlier correlate_devices call. Missing for: "
                         + ", ".join(missing), "fix_input")
+        # status_facts is the API's own object from the earlier result (no inventory values), passed through as is
+        # next to its status_hash; the API checks it and ignores it unless it hashes to that status_hash.
+        for a, src in zip(cleaned, raw):
+            facts = src.get("status_facts") if isinstance(src, dict) else None
+            if a.get("status_hash") and isinstance(facts, dict):
+                a["status_facts"] = facts
         body = await _call(api, "POST", CHECK_PATH, {"assets": cleaned})
         rows = (body.get("data") or {}).get("results") or []
-        results = [{"asset_id": r.get("asset_id"), "changed": bool(r.get("changed")),
-                    "current_hash": r.get("current_hash"), "reason": r.get("reason")} for r in rows]
+        results = []
+        for r in rows:
+            item = {"asset_id": r.get("asset_id"), "changed": bool(r.get("changed")),
+                    "current_hash": r.get("current_hash"), "reason": r.get("reason")}
+            if "status_changed" in r:
+                item.update({"status_changed": bool(r.get("status_changed")),
+                             "current_status_hash": r.get("current_status_hash"),
+                             "current_status_facts": r.get("current_status_facts"),
+                             "reasons": r.get("reasons") or []})
+            results.append(item)
         changed = [r["asset_id"] for r in results if r["changed"]]
-        return _envelope(api, {
+        status_changed = [r["asset_id"] for r in results if r.get("status_changed")]
+        out = {
             "changed": changed,
             "unchanged_count": len(results) - len(changed),
             "results": results,
             "next_step": ("Call correlate_devices for the changed assets to see what is new."
                           if changed else "Nothing changed since the stored results."),
-        }, privacy)
+        }
+        if any("status_changed" in r for r in results):
+            out["status_changed"] = status_changed
+            if status_changed and not changed:
+                out["next_step"] = ("The findings are the same; the status changed for some devices (see reasons). "
+                                    "Keep the new current_status_hash and current_status_facts.")
+            elif not changed:
+                out["next_step"] = "Nothing changed since the stored results: findings and status are the same."
+        return _envelope(api, out, privacy)
 
     @mcp.tool(
         annotations=_READ_ONLY,

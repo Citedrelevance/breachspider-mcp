@@ -304,6 +304,8 @@ def asset_result(r: Dict[str, Any], filtered: bool) -> Dict[str, Any]:
         "needs_review": needs_review,
         "warnings": [cap(warning_text(w), 200) for w in r.get("warnings") or []],
         "result_hash": r.get("result_hash"),
+        "status_hash": r.get("status_hash"),
+        "status_facts": r.get("status_facts"),
         "total": total,
         "has_more": bool(page.get("has_more")),
         "fix_plan": fix_plan(r.get("fix_plan")),

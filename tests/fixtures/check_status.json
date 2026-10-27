@@ -1,0 +1,63 @@
+{
+ "api": {
+  "version": "1.0.0",
+  "request_id": "bs-req-09946025bf1b",
+  "timestamp": "2026-10-27T10:25:05.585307Z",
+  "processing_ms": 285
+ },
+ "data": {
+  "results": [
+   {
+    "asset_id": "EXAMPLE-SWITCH-01",
+    "changed": false,
+    "current_hash": "sha256:f26d5c89fe2622813a800fa7f91bcd8cfdf8ca51add2e37931ab7a7d0a41467d",
+    "reason": "identity and cve/tier set unchanged",
+    "findings_changed": false,
+    "status_changed": false,
+    "current_status_hash": "sha256:c466359111e8428a2043b463ff52195e64ccfd969e8c33382790435d4db29ba4",
+    "current_status_facts": {
+     "v": 1,
+     "known_exploited": [],
+     "lifecycle": null,
+     "firmware_currency": null
+    },
+    "reasons": []
+   },
+   {
+    "asset_id": "EXAMPLE-SWITCH-02",
+    "changed": false,
+    "current_hash": "sha256:f26d5c89fe2622813a800fa7f91bcd8cfdf8ca51add2e37931ab7a7d0a41467d",
+    "reason": "identity and cve/tier set unchanged",
+    "findings_changed": false,
+    "status_changed": true,
+    "current_status_hash": "sha256:c466359111e8428a2043b463ff52195e64ccfd969e8c33382790435d4db29ba4",
+    "current_status_facts": {
+     "v": 1,
+     "known_exploited": [],
+     "lifecycle": null,
+     "firmware_currency": null
+    },
+    "reasons": [
+     {
+      "code": "NO_LONGER_KNOWN_EXPLOITED",
+      "text": "no longer known-exploited",
+      "cve_ids": [
+       "CVE-2024-9137"
+      ]
+     }
+    ]
+   }
+  ],
+  "changed": [],
+  "status_changed": [
+   "EXAMPLE-SWITCH-02"
+  ]
+ },
+ "meta": {
+  "source": "breachspider-correlate",
+  "mode": "staleness-check"
+ },
+ "_links": {
+  "self": "/api/v1/assets/correlate-cves/check"
+ }
+}

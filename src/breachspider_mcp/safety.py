@@ -1,6 +1,7 @@
 """Keep identifying data out of API requests.
 
-Only vendor, product, version, asset_id (and result_hash for check_changes) ever leave this machine; for
+Only vendor, product, version, asset_id (and, for check_changes, result_hash, status_hash and the API's own
+status_facts from an earlier result) ever leave this machine; for
 check_windows_host only the Windows host fields in WINDOWS_FIELDS do. Any other
 field an agent passes along is dropped, and the fields that look identifying are named in the output so the
 user can see what was held back. An asset_id that contains an IP, MAC or email address, or is a domain or fully
