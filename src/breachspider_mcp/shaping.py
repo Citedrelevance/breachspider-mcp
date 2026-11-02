@@ -463,3 +463,12 @@ def windows_host_result(h: Dict[str, Any]) -> Dict[str, Any]:
         "result_hash": h.get("result_hash"),
         "warnings": [cap(warning_text(w)) for w in h.get("warnings") or []] or None,
     })
+
+
+def catalog_product(x: Dict[str, Any]) -> Dict[str, Any]:
+    """One catalog search row; a folded "X Firmware" entry is shown as also_listed_as with its own CVE count."""
+    out = {"product": cap(x.get("name"), 120), "cve_count": x.get("cve_count")}
+    fw = x.get("firmware_entry") or None
+    if fw:
+        out["also_listed_as"] = {"product": cap(fw.get("name"), 120), "cve_count": fw.get("cve_count")}
+    return out

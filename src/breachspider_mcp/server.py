@@ -588,12 +588,14 @@ def build_server(api: Optional[API] = None, *, hosted: bool = False,
         vendors = (vbody.get("data") or [])[:3]
         out_vendors = []
         for row in vendors:
-            pbody = await _call(api, "GET", CATALOG_PRODUCTS_PATH, params={"vendor_id": row.get("id"), "q": p})
+            # group_firmware (finding 7): NVD's separate "X Firmware" entry is folded under "X" so it does not use up
+            # a result slot. Needs API 2026-11 or later.
+            pbody = await _call(api, "GET", CATALOG_PRODUCTS_PATH,
+                                params={"vendor_id": row.get("id"), "q": p, "group_firmware": "true"})
             out_vendors.append({
                 "vendor": shaping.cap(row.get("name"), 100),
                 "products_with_cves": row.get("cve_product_count"),
-                "products": [{"product": shaping.cap(x.get("name"), 120), "cve_count": x.get("cve_count")}
-                             for x in (pbody.get("data") or [])[:15]],
+                "products": [shaping.catalog_product(x) for x in (pbody.get("data") or [])[:15]],
             })
         note = ("Only products with at least one CVE are listed. A missing product is not a sign the device has no "
                 "CVEs; check the device itself with correlate_devices.")
