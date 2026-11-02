@@ -488,3 +488,15 @@ def test_empty_vendor_row_is_reported_not_fatal(keyed_server, mocked):
     assert not err
     assert out["not_checked"][0]["asset_id"] == "bad-1" and "vendor" in out["not_checked"][0]["error"]
     assert len(_sent(mocked)["assets"]) == 1
+
+
+def test_headline_separates_likely_not_affected(keyed_server, mocked):
+    body = fixture("correlate_mixed.json")
+    r0 = body["data"]["results"][0]
+    r0["cves_page"] = {**(r0.get("cves_page") or {}), "total": 48, "has_more": True}
+    r0["resolution"] = {**r0["resolution"], "status": "resolved", "coverage": "covered"}
+    r0["warnings"] = (r0.get("warnings") or []) + [{"code": "LIKELY_NOT_AFFECTED", "message": "x",
+                                                     "cve_ids": [f"CVE-2020-{i}" for i in range(10)]}]
+    mocked.add(responses.POST, CORRELATE, json=body)
+    err, out = call(keyed_server, "correlate_devices", {"assets": [{"vendor": "Schneider Electric", "product": "Modicon M340", "version": "3.70"}]})
+    assert not err and out["results"][0]["assessment"].startswith("38 CVEs apply; 10 more listed as likely not affected")

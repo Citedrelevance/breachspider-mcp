@@ -234,7 +234,7 @@ def _candidates(cands: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 def assessment(status: Optional[str], coverage: Optional[str], total: Optional[int], needs_review: bool,
-               filtered: bool) -> str:
+               filtered: bool, likely_not_affected: int = 0) -> str:
     """One honest sentence about what the result does and does not show. Never calls a result clean."""
     if status == "unresolved":
         msg = ("Not assessed: the device could not be matched to a catalog product, so no CVEs were checked. "
@@ -258,7 +258,15 @@ def assessment(status: Optional[str], coverage: Optional[str], total: Optional[i
         msg = ("No CVEs matched this version in BreachSpider's published data. That is not proof the device "
                "is free of vulnerabilities, only that none are known for this product and version.")
     else:
-        msg = f"{total} CVE{'' if total == 1 else 's'} matched."
+        lna = min(likely_not_affected or 0, total)
+        if lna and not filtered:
+            # Retest N3 (2026-11-02): likely-not-affected CVEs are listed, not open; the headline says so.
+            apply_n = total
+            apply_n -= lna
+            msg = (f"{apply_n} CVE{'' if apply_n == 1 else 's'} apply; {lna} more listed as likely not "
+                   f"affected (vendor-stated fix or affected range below this version; confirm in the advisory).")
+        else:
+            msg = f"{total} CVE{'' if total == 1 else 's'} matched."
     if needs_review:
         msg += " Flagged needs_review: confirm the match before acting on it."
     return msg
@@ -310,7 +318,9 @@ def asset_result(r: Dict[str, Any], filtered: bool) -> Dict[str, Any]:
         "asset_id": r.get("asset_id"),
         "resolution": resolution(res),
         "coverage": coverage,
-        "assessment": assessment(status, coverage, total, needs_review, filtered),
+        "assessment": assessment(status, coverage, total, needs_review, filtered, len(next(
+            (w.get("cve_ids") or [] for w in r.get("warnings") or []
+             if isinstance(w, dict) and w.get("code") == "LIKELY_NOT_AFFECTED"), []))),
         "needs_review": needs_review,
         "warnings": [cap(warning_text(w), 200) for w in r.get("warnings") or []],
         "result_hash": r.get("result_hash"),
