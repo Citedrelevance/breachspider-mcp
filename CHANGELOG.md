@@ -2,7 +2,7 @@
 
 All notable changes to the BreachSpider MCP server. This project follows [Semantic Versioning](https://semver.org/).
 
-## 0.2.0 (unreleased)
+## 0.2.0 (2026-11-02)
 
 ### Added
 - `submit_device_batch`: queue up to 5,000 devices as one batch job (`POST /api/v1/batches`) and get a `job_id` at
