@@ -33,7 +33,7 @@ from mcp.types import ToolAnnotations
 
 from . import __version__, shaping
 from .api import API, BATCH_PATH, CHECK_PATH, CORRELATE_PATH, DEMO_NOTICE, DEVELOPERS_URL, CONTACT_URL, ToolFailure, agent_sentence, format_failure
-from .safety import clean_assets, clean_windows_hosts, hosted_refusal
+from .safety import clean_assets, clean_windows_hosts, hosted_refusal, value_refusal
 
 MAX_FINDINGS = 100
 WINDOWS_PATH = "/api/v2/assets/check-windows"
@@ -75,8 +75,10 @@ is true, wait retry_after_seconds before retrying.
 * For long inventories (hundreds or thousands of devices) use submit_device_batch, then get_device_batch with the \
 job_id until the job is finished, reading results page by page with next_cursor. It needs a key with batch jobs \
 enabled. Each result has the same honesty rules as correlate_devices.
-* Never send host names, IP or MAC addresses, user names or site names. Identifying fields are stripped \
-before sending and reported in privacy.dropped_identifying_fields.
+* Never send host names, IP or MAC addresses, serial numbers, user names or site names. Identifying fields are \
+stripped before sending and reported in privacy.dropped_identifying_fields; an asset_id that looks identifying is \
+replaced with asset-N; identifying text inside vendor, product, version or part_number refuses the call and nothing \
+is sent.
 """
 
 # The hosted server at mcp.breachspider.com (plan D7): every synchronous call must finish well under 30 s, so calls
@@ -224,7 +226,11 @@ def build_server(api: Optional[API] = None, *, hosted: bool = False,
     cap_chk = HOSTED_CAPS["check_changes"] if hosted else None
 
     def guard(raw_items, privacy) -> None:
-        """Hosted: refuse anything identifying before calling the API."""
+        """Both profiles: refuse identifying values inside the sent fields (audit C4). Hosted: also refuse identifying
+        field names and asset_ids instead of stripping them."""
+        msg = value_refusal(raw_items)
+        if msg:
+            raise _fail(msg, "fix_input")
         if hosted:
             msg = hosted_refusal(raw_items, privacy)
             if msg:

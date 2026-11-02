@@ -430,3 +430,13 @@ def test_likely_not_affected_named_in_header(keyed_server, mocked):
     err, out = call(keyed_server, "correlate_devices", {"assets": [{"vendor": "Siemens", "product": "S7-1200", "version": "4.5"}]})
     assert not err
     assert out["results"][0]["likely_not_affected"] == ["CVE-2017-12741", "CVE-2018-13815"]
+
+
+def test_identifying_text_in_product_refused_nothing_sent(keyed_server, mocked):
+    for asset in ({"vendor": "Moxa", "product": "EDS-518A at 192.168.1.20", "version": "3.5"},
+                  {"vendor": "Moxa", "product": "EDS-518A", "version": "3.5", "part_number": "SN 4C2D9988"},
+                  {"vendor": "Moxa", "product": "EDS-518A owner jsmith", "version": "3.5"}):
+        err, text = call(keyed_server, "correlate_devices", {"assets": [asset]})
+        assert err and "fix_input" in text and "nothing was sent" in text
+        assert "192.168" not in text and "4C2D9988" not in text and "jsmith" not in text
+    assert not [c for c in mocked.calls if "/correlate" in c.request.url]

@@ -147,6 +147,72 @@ def clean_windows_hosts(hosts: Iterable[Any]) -> Tuple[List[Dict[str, Any]], Dic
     return cleaned, report
 
 
+# Audit C4 (2026-11-02): identifying data inside the fields that ARE sent (vendor, product, version, part_number,
+# firmware_version), not only asset_id: "EDS-518A at 192.168.1.20", "SN 4C2D9988", "3.5 serial 4C2D9988",
+# "EDS-518A owner jsmith". The call is refused, naming the field and the reason, never the value.
+_EMAIL_IN_TEXT = re.compile(r"[^@\s]+@[^@\s]+\.[a-z]{2,}", re.I)   # "Merlin@Home" is a product
+VALUE_FIELDS = ("vendor", "product", "version", "part_number", "firmware_version")
+_SERIAL = re.compile(r"\b(?:s/n|sn|serial(?:\s*(?:no|num|number))?)\b\.?\s*[:#=]?\s*(?=[a-z0-9-]*\d)(?:(?=[a-z0-9-]*[a-z])[a-z0-9][a-z0-9-]{3,}|[0-9][0-9-]{5,})\b", re.I)
+_SERIAL_SN_GLUED = re.compile(r"^sn\d", re.I)       # TI parts such as SN74LS00: the prefix is part of the part number
+_USER = re.compile(r"\b(?:owner|username|user\s*name|login|operator|user)\s*[:=]\s*\S{2,}|"
+                   r"\bowner\s+[a-z][a-z0-9._-]{2,}\b", re.I)
+# An address in a name: a dotted run of exactly four parts (a longer run is a version), each 0-255, and either a
+# private / loopback / link-local range or two parts of 100 or more (versions like 8.10.151.0 have one).
+_ADDR4 = re.compile(r"\d+(?:\.\d+)+")      # dotted number runs; only a run of exactly four parts is checked
+
+
+def _has_address(v):
+    for m in _ADDR4.finditer(v):
+        o = [int(x) for x in m.group(0).split(".")]
+        if len(o) != 4 or max(o) > 255:
+            continue
+        private = o[0] in (10, 127) or (o[0] == 192 and o[1] == 168) or (o[0] == 172 and 16 <= o[1] <= 31) \
+            or (o[0] == 169 and o[1] == 254)
+        if private or sum(1 for x in o if x >= 100) >= 2:
+            return True
+    return False
+
+
+_DOTTED_VERSION = re.compile(r"^[vV]?\d+(?:\.\d+){1,4}[a-zA-Z]?$")
+
+
+def value_reason(field: str, value: Any) -> str:
+    """Why a sent field's value looks identifying, or '' when it does not. Never returns the value."""
+    v = _text(value)
+    if not v:
+        return ""
+    if _EMAIL_IN_TEXT.search(v):
+        return "contains an email address"
+    if _MAC.search(v):
+        return "contains a MAC address"
+    if _has_address(v) and not (field in ("version", "firmware_version", "part_number") and _DOTTED_VERSION.match(v)):
+        return "contains an IP address"
+    if ":" in v and _IPV6.search(v) and not _looks_like_version(v) and re.search(r"[0-9a-f]{1,4}:[0-9a-f]{1,4}:[0-9a-f]{1,4}", v, re.I):
+        return "contains an IP address"
+    m = _SERIAL.search(v)
+    if m and not (_SERIAL_SN_GLUED.match(m.group(0)) and m.start() == 0):
+        return "contains a serial number"
+    if _USER.search(v):
+        return "contains a user name"
+    return ""
+
+
+def value_refusal(raw_items: Iterable[Any], fields: Tuple[str, ...] = VALUE_FIELDS) -> str:
+    """Refusal text for identifying values in sent fields, '' when there are none."""
+    parts = []
+    for i, raw in enumerate(raw_items, start=1):
+        item = raw if isinstance(raw, dict) else dict(raw)
+        for f in fields:
+            why = value_reason(f, item.get(f))
+            if why:
+                parts.append(f"asset {i}: {f} {why}")
+    if not parts:
+        return ""
+    return ("Refused, nothing was sent: " + "; ".join(parts[:10]) + ". Send the vendor, product and version only, "
+            "as the vendor names them (for example product EDS-518A, version 3.5); keep addresses, serial numbers "
+            "and user names out of every field.")
+
+
 def identifying_reason(value: Any) -> str:
     """What an asset_id looks like, for a refusal that names the reason and never the value."""
     v = _text(value)
