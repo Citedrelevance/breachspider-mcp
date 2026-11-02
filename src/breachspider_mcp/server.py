@@ -629,7 +629,8 @@ def build_server(api: Optional[API] = None, *, hosted: bool = False,
                 "products": [shaping.catalog_product(x) for x in (pbody.get("data") or [])[:15]],
             })
         note = ("Only products with at least one CVE are listed. A missing product is not a sign the device has no "
-                "CVEs; check the device itself with correlate_devices.")
+                "CVEs; check the device itself with correlate_devices. cve_count counts the CVEs filed under that exact "
+                "catalog name; a device check also uses the records of its product family, so it can list more.")
         if not out_vendors:
             note = ("No vendor in the catalog matches that name. Check the spelling, or run correlate_devices with the "
                     "inventory's own names: it reports PRODUCT_UNRESOLVED when it cannot match.")
