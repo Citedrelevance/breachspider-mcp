@@ -242,6 +242,10 @@ def assessment(status: Optional[str], coverage: Optional[str], total: Optional[i
     elif status == "ambiguous":
         msg = ("Ambiguous match: several catalog products fit. The findings may be incomplete or belong to a "
                "different model. Confirm the product before relying on them.")
+    elif status == "resolved" and coverage is None:
+        # Audit M2 (2026-11-02): resolved below the confidence gate, so no correlation ran.
+        msg = ("Not assessed: the product match was too uncertain, so no CVEs were checked. This is not a clean "
+               "result. Send the exact model or order number as the vendor names it.")
     elif coverage == "no_cpe_data":
         msg = ("The product was found but BreachSpider has no affected version data for it, so an empty list "
                "does not mean the device is free of CVEs.")
@@ -283,10 +287,16 @@ def fix_plan(plan: Optional[Dict[str, Any]]) -> Dict[str, Any]:
                             "derived_from_range": True if s.get("derived") else None,
                             "clears": s.get("clears"), "note": cap(s.get("note"))})
 
-    return {
+    out = {
         "to_clear_known_exploited": step(plan.get("to_clear_known_exploited")),
         "to_clear_all_fixable": step(plan.get("to_clear_all_fixable")),
     }
+    ke = plan.get("known_exploited")
+    if ke:
+        # Audit H1 (2026-11-02): how much of the known-exploited set the plan really clears.
+        out["known_exploited"] = _drop_empty({k: ke.get(k) for k in ("total", "confirmed_for_version",
+                                              "cleared_by_plan", "without_fix")} | {"note": cap(ke.get("note"))})
+    return out
 
 
 def asset_result(r: Dict[str, Any], filtered: bool) -> Dict[str, Any]:
@@ -316,7 +326,8 @@ def asset_result(r: Dict[str, Any], filtered: bool) -> Dict[str, Any]:
     if lna:
         # Retest issue 3 (2026-11-02): these sort last and are often past max_findings; name them in the header.
         out["likely_not_affected"] = [cap(str(x), 40) for x in lna[:100]]
-    lc, fw = lifecycle(r.get("lifecycle")), firmware(r.get("firmware_currency"))
+    not_assessed = status == "resolved" and coverage is None
+    lc, fw = (None, None) if not_assessed else (lifecycle(r.get("lifecycle")), firmware(r.get("firmware_currency")))
     if lc:
         out["lifecycle"] = lc
     if fw:

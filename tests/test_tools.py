@@ -440,3 +440,51 @@ def test_identifying_text_in_product_refused_nothing_sent(keyed_server, mocked):
         assert err and "fix_input" in text and "nothing was sent" in text
         assert "192.168" not in text and "4C2D9988" not in text and "jsmith" not in text
     assert not [c for c in mocked.calls if "/correlate" in c.request.url]
+
+
+def test_fix_plan_known_exploited_summary(keyed_server, mocked):
+    body = fixture("correlate_mixed.json")
+    r0 = body["data"]["results"][0]
+    r0["fix_plan"] = {**(r0.get("fix_plan") or {}), "known_exploited": {
+        "total": 8, "confirmed_for_version": 8, "cleared_by_plan": 1, "without_fix": 7,
+        "note": "Clears 1 of 8 known-exploited CVEs. 7 have no fix version in our data; see the vendor advisories."}}
+    mocked.add(responses.POST, CORRELATE, json=body)
+    err, out = call(keyed_server, "correlate_devices", {"assets": [{"vendor": "Palo Alto Networks", "product": "PAN-OS", "version": "10.2.8"}]})
+    assert not err
+    ke = out["results"][0]["fix_plan"]["known_exploited"]
+    assert ke["cleared_by_plan"] == 1 and ke["without_fix"] == 7 and "Clears 1 of 8" in ke["note"]
+
+
+def test_below_gate_is_not_assessed(keyed_server, mocked):
+    body = fixture("correlate_mixed.json")
+    r0 = body["data"]["results"][0]
+    r0["resolution"] = {**r0["resolution"], "status": "resolved", "coverage": None, "confidence_band": "LOW"}
+    r0["cves"], r0["needs_review"] = [], True
+    r0["cves_page"] = {**(r0.get("cves_page") or {}), "total": 0, "has_more": False}
+    mocked.add(responses.POST, CORRELATE, json=body)
+    err, out = call(keyed_server, "correlate_devices", {"assets": [{"vendor": "Moxa", "product": "EDS-5", "version": "3.5"}]})
+    assert not err
+    a = out["results"][0]
+    assert a["assessment"].startswith("Not assessed") and "No CVEs matched" not in a["assessment"]
+    assert "firmware" not in a and "lifecycle" not in a
+
+
+def test_over_cap_is_reduce_batch(mocked):
+    from breachspider_mcp.server import build_server
+    from breachspider_mcp.api import API
+    from conftest import TEST_KEY
+    hosted_server = build_server(API(api_key=TEST_KEY, base_url=BASE), hosted=True)
+    assets = [{"vendor": "Moxa", "product": "EDS-518A", "version": "3.5", "asset_id": f"PLC-{i}"} for i in range(26)]
+    err, text = call(hosted_server, "correlate_devices", {"assets": assets})
+    assert err and "reduce_batch" in text and "errors.pydantic.dev" not in text
+    assert not [c for c in mocked.calls if "/correlate" in c.request.url]
+
+
+def test_empty_vendor_row_is_reported_not_fatal(keyed_server, mocked):
+    mocked.add(responses.POST, CORRELATE, json=fixture("correlate_eds518a.json"))
+    err, out = call(keyed_server, "correlate_devices", {"assets": [
+        {"vendor": "Moxa", "product": "EDS-518A", "version": "3.5", "asset_id": "ok-1"},
+        {"vendor": "", "product": "EDS-518A", "version": "3.5", "asset_id": "bad-1"}]})
+    assert not err
+    assert out["not_checked"][0]["asset_id"] == "bad-1" and "vendor" in out["not_checked"][0]["error"]
+    assert len(_sent(mocked)["assets"]) == 1

@@ -259,18 +259,35 @@ def build_server(api: Optional[API] = None, *, hosted: bool = False,
         ),
     )
     async def correlate_devices(
-        assets: Annotated[List[D], Field(min_length=1, max_length=cap_dev, description="Devices to check: vendor, product, version and an optional neutral asset_id.")],
+        assets: Annotated[List[D], Field(min_length=1, description="Devices to check: vendor, product, version and an optional neutral asset_id." + (f" At most {cap_dev} per call." if cap_dev else ""), json_schema_extra={"maxItems": cap_dev} if cap_dev else None)],
         confirmed_only: Annotated[bool, Field(description="Only CVEs confirmed for this version by a version range.")] = False,
         known_exploited_only: Annotated[bool, Field(description="Only known-exploited CVEs.")] = False,
         fix_available_only: Annotated[bool, Field(description="Only CVEs with a fix available.")] = False,
         max_findings: Annotated[int, Field(ge=1, le=MAX_FINDINGS, description="Findings returned per device, highest priority first.")] = 25,
     ) -> Dict[str, Any]:
+        if cap_dev and len(assets) > cap_dev:
+            # Audit M6 (2026-11-02): over the cap is a reduce_batch error with retry guidance, not a raw schema error.
+            raise _fail(f"Too many devices: {len(assets)} sent, at most {cap_dev} per call. Split the list into calls "
+                        f"of {cap_dev} or fewer, or use submit_device_batch for long inventories.", "reduce_batch")
         raw = _raw(assets)
         cleaned, privacy = clean_assets(raw)
         guard(raw, privacy)
+        # Audit M7 (2026-11-02): one row without a vendor or product no longer fails the whole call: it gets its own
+        # error and the other rows are checked.
+        row_errors, sendable = [], []
+        for c in cleaned:
+            missing = [f for f in ("vendor", "product") if not (c.get(f) or "").strip()]
+            if missing:
+                row_errors.append({"asset_id": c.get("asset_id"), "error": f"{' and '.join(missing)} is empty; this "
+                                   f"device was not checked. Send the vendor and product as the inventory names them."})
+            else:
+                sendable.append(c)
+        if not sendable:
+            raise _fail("No device could be checked: " + "; ".join(f"{e['asset_id']}: {e['error'].split(';')[0]}"
+                                                                      for e in row_errors[:10]) + ".", "fix_input")
         filtered = bool(confirmed_only or known_exploited_only or fix_available_only)
         body = await _call(api, "POST", CORRELATE_PATH, _correlate_body(
-            cleaned, page_size=max_findings, confirmed_only=confirmed_only,
+            sendable, page_size=max_findings, confirmed_only=confirmed_only,
             known_exploited_only=known_exploited_only, fix_available_only=fix_available_only))
         data = body.get("data") or {}
         results = [shaping.asset_result(r, filtered) for r in data.get("results") or []]
@@ -280,6 +297,8 @@ def build_server(api: Optional[API] = None, *, hosted: bool = False,
             "by_status": summary.get("by_status"),
             "results": results,
         }
+        if row_errors:
+            out["not_checked"] = row_errors
         lcs = shaping.lifecycle_summary(summary)
         if lcs:
             out["lifecycle_and_firmware"] = lcs
@@ -301,8 +320,11 @@ def build_server(api: Optional[API] = None, *, hosted: bool = False,
         ),
     )
     async def check_changes(
-        assets: Annotated[List[DH], Field(min_length=1, max_length=cap_chk, description="Devices with the result_hash from an earlier correlate_devices call.")],
+        assets: Annotated[List[DH], Field(min_length=1, description="Devices with the result_hash from an earlier correlate_devices call." + (f" At most {cap_chk} per call." if cap_chk else ""), json_schema_extra={"maxItems": cap_chk} if cap_chk else None)],
     ) -> Dict[str, Any]:
+        if cap_chk and len(assets) > cap_chk:
+            raise _fail(f"Too many devices: {len(assets)} sent, at most {cap_chk} per call. Split the list into "
+                        f"calls of {cap_chk} or fewer.", "reduce_batch")
         raw = _raw(assets)
         cleaned, privacy = clean_assets([{k: v for k, v in x.items() if k != "status_facts"} for x in raw],
                                         extra_fields=("result_hash", "status_hash"))
@@ -425,13 +447,16 @@ def build_server(api: Optional[API] = None, *, hosted: bool = False,
         ),
     )
     async def check_windows_host(
-        assets: Annotated[List[WH], Field(min_length=1, max_length=cap_win, description=f"Windows hosts to check, at most {cap_win}.")],
+        assets: Annotated[List[WH], Field(min_length=1, description=f"Windows hosts to check, at most {cap_win}.", json_schema_extra={"maxItems": cap_win})],
         max_findings: Annotated[int, Field(ge=1, le=MAX_FINDINGS, description="Open and needs review findings returned per host, highest priority first.")] = 25,
     ) -> Dict[str, Any]:
         if api.demo:
             raise _fail(f"check_windows_host is not available in {DEMO_NOTICE}, and trial keys cannot use it "
                         f"either. It needs a partner or customer API key in BREACHSPIDER_API_KEY. Talk to us: "
                         f"{CONTACT_URL} (developer page: {DEVELOPERS_URL}).", "use_different_key", demo=True)
+        if cap_win and len(assets) > cap_win:
+            raise _fail(f"Too many hosts: {len(assets)} sent, at most {cap_win} per call. Split the list into "
+                        f"calls of {cap_win} or fewer.", "reduce_batch")
         raw = _raw(assets)
         cleaned, privacy = clean_windows_hosts(raw)
         guard(raw, privacy)
