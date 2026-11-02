@@ -17,7 +17,7 @@ def _sent(mocked, i=-1):
 def test_tools_listed_read_only(keyed_server):
     tools = {t.name: t for t in list_tools(keyed_server)}
     assert set(tools) == {"correlate_devices", "check_changes", "get_fix_plan", "lookup_cve", "check_windows_host",
-                          "submit_device_batch", "get_device_batch"}
+                          "submit_device_batch", "get_device_batch", "search_products"}
     for name, t in tools.items():
         assert t.annotations.read_only_hint is (name != "submit_device_batch")   # submit queues a job
         assert t.annotations.destructive_hint is False

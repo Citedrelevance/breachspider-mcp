@@ -9,6 +9,8 @@ All notable changes to the BreachSpider MCP server. This project follows [Semant
   tools, names and result shaping; unknown fields are a schema error; identifying values (an asset_id that looks
   like an IP, MAC or email address or a host name) are refused with the field and the reason, never the value, and
   nothing is sent; per-call caps of 25 devices, 5 Windows hosts and 200 change checks; no demo mode.
+- `search_products`: how the catalog names a vendor and its products (top 3 vendors, up to 15 products each, CVE
+  counts), with a note that only products with CVEs are listed. Customer keys only.
 - `safety.hosted_refusal` and `safety.identifying_reason`.
 
 ### Changed

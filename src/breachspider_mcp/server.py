@@ -9,6 +9,7 @@ and ones that need a partner or customer key:
     check_windows_host   POST /api/v2/assets/check-windows (stateless, stores nothing)
     submit_device_batch  POST /api/v1/batches (key with batch jobs enabled)
     get_device_batch     GET  /api/v1/batches/{id} and /results
+    search_products      GET  /api/v1/catalog/vendors and /catalog/products (customer keys)
 """
 
 
@@ -39,6 +40,8 @@ WINDOWS_PATH = "/api/v2/assets/check-windows"
 MAX_WINDOWS_HOSTS = 25
 MAX_BATCH_DEVICES = 5000
 BATCH_PAGE_MAX = 50
+CATALOG_VENDORS_PATH = "/api/v1/catalog/vendors"
+CATALOG_PRODUCTS_PATH = "/api/v1/catalog/products"
 _JOB_ID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 _BATCH_FINAL = ("succeeded", "partial", "failed", "cancelled")
 _BATCH_404 = {
@@ -555,6 +558,50 @@ def build_server(api: Optional[API] = None, *, hosted: bool = False,
         if status == "cancelled":
             out["note"] = "The job was cancelled: only the devices processed before the cancel have results."
         return _envelope(api, out, {})
+
+    @mcp.tool(
+        annotations=_READ_ONLY,
+        structured_output=False,
+        description=(
+            "Find how BreachSpider's catalog names a vendor and its products, for example to check the spelling of "
+            "a product before correlate_devices. Send the vendor as written and, optionally, part of the product "
+            "name. Returns up to 3 matching vendors, each with up to 15 matching products and their CVE counts. "
+            "Only products with at least one CVE are listed: a product that is not listed may still exist, and "
+            "this is never an answer about whether a device is affected. For that, use correlate_devices with the "
+            "inventory's own vendor, product and version; it resolves names itself. Needs a customer API key; "
+            "trial and partner keys cannot use it."
+
+            " If a call fails, the error starts with what to do and ends with retry_guidance (retryable, "
+            "retry_after_seconds, action): never retry when retryable is false."
+        ),
+    )
+    async def search_products(
+        vendor: Annotated[str, Field(min_length=1, max_length=100, description="Vendor as written, for example 'Siemens' or 'Schneider'.")],
+        product: Annotated[Optional[str], Field(max_length=100, description="Optional part of the product name, for example 'S7-1200'.")] = None,
+    ) -> Dict[str, Any]:
+        if api.demo:
+            raise _fail(f"search_products is not available in {DEMO_NOTICE}. It needs a customer API key. Talk to "
+                        f"us: {CONTACT_URL}", "use_different_key", demo=True)
+        v = vendor.strip()
+        p = (product or "").strip()
+        vbody = await _call(api, "GET", CATALOG_VENDORS_PATH, params={"q": v})
+        vendors = (vbody.get("data") or [])[:3]
+        out_vendors = []
+        for row in vendors:
+            pbody = await _call(api, "GET", CATALOG_PRODUCTS_PATH, params={"vendor_id": row.get("id"), "q": p})
+            out_vendors.append({
+                "vendor": shaping.cap(row.get("name"), 100),
+                "products_with_cves": row.get("cve_product_count"),
+                "products": [{"product": shaping.cap(x.get("name"), 120), "cve_count": x.get("cve_count")}
+                             for x in (pbody.get("data") or [])[:15]],
+            })
+        note = ("Only products with at least one CVE are listed. A missing product is not a sign the device has no "
+                "CVEs; check the device itself with correlate_devices.")
+        if not out_vendors:
+            note = ("No vendor in the catalog matches that name. Check the spelling, or run correlate_devices with the "
+                    "inventory's own names: it reports PRODUCT_UNRESOLVED when it cannot match.")
+        return _envelope(api, {"query": {"vendor": shaping.cap(v, 100), "product": shaping.cap(p, 100) or None},
+                               "vendors": out_vendors, "note": note}, {})
 
     return mcp
 
