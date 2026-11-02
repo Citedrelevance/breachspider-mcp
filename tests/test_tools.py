@@ -246,8 +246,8 @@ def test_lookup_cve_fix_single_product(keyed_server, mocked):
     mocked.add(responses.GET, f"{BASE}/api/v1/cves/CVE-2024-9137", json=rec)
     _, out = call(keyed_server, "lookup_cve", {"cve_id": "CVE-2024-9137"})
     assert out["fix"]["status"] == "varies_by_product"
-    assert out["fix"]["note"] == ("Fixed in 11.36.46 for Commvault Web Server; use correlate_devices to confirm for "
-                                  "your product.")
+    assert out["fix"]["note"] == ("Fixed in 11.36.46 for Commvault Web Server. Fixes for other affected products, if "
+                                  "any, are in the vendor advisories; use correlate_devices to confirm for your product.")
 
 
 def test_lookup_cve_fix_unknown_has_no_note(keyed_server, mocked):

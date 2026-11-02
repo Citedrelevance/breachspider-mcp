@@ -333,7 +333,8 @@ def asset_result(r: Dict[str, Any], filtered: bool) -> Dict[str, Any]:
 
 VARIES_BY_PRODUCT_NOTE = ("Fixed versions differ by product. Use correlate_devices with the device's vendor, product "
                           "and version for the exact fix that applies to it.")
-SINGLE_PRODUCT_NOTE = "Fixed in {version} for {product}; use correlate_devices to confirm for your product."
+SINGLE_PRODUCT_NOTE = ("Fixed in {version} for {product}. Fixes for other affected products, if any, are in the "
+                       "vendor advisories; use correlate_devices to confirm for your product.")
 
 
 def _fix_note(patch: Dict[str, Any]) -> Optional[str]:
