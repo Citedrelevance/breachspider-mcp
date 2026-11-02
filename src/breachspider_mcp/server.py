@@ -617,6 +617,11 @@ def build_server(api: Optional[API] = None, *, hosted: bool = False,
         p = (product or "").strip()
         vbody = await _call(api, "GET", CATALOG_VENDORS_PATH, params={"q": v})
         vendors = (vbody.get("data") or [])[:3]
+        fold = lambda x: re.sub(r"[^a-z0-9]", "", str(x or "").lower())  # noqa: E731
+        exact = [x for x in vendors if fold(x.get("name")) == fold(v) or fold(x.get("slug")) == fold(v)]
+        if exact:   # audit L6 (2026-11-02): "GE" is GE, not also Netgear and GE Healthcare
+            vendors = exact[:1]
+        similar = bool((vbody.get("meta") or {}).get("similar_spelling"))
         out_vendors = []
         for row in vendors:
             # group_firmware (finding 7): NVD's separate "X Firmware" entry is folded under "X" so it does not use up
@@ -631,9 +636,12 @@ def build_server(api: Optional[API] = None, *, hosted: bool = False,
         note = ("Only products with at least one CVE are listed. A missing product is not a sign the device has no "
                 "CVEs; check the device itself with correlate_devices. cve_count counts the CVEs filed under that exact "
                 "catalog name; a device check also uses the records of its product family, so it can list more.")
+        if similar and out_vendors:
+            note = ("No vendor matched that spelling exactly; these are the closest spellings. Check which one the "
+                    "inventory means before relying on the results. " + note)
         if not out_vendors:
             note = ("No vendor in the catalog matches that name. Check the spelling, or run correlate_devices with the "
-                    "inventory's own names: it reports PRODUCT_UNRESOLVED when it cannot match.")
+                    "inventory's own names: it says so when it cannot match the product, and never reads that as clean.")
         return _envelope(api, {"query": {"vendor": shaping.cap(v, 100), "product": shaping.cap(p, 100) or None},
                                "vendors": out_vendors, "note": note}, {})
 
