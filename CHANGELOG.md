@@ -13,8 +13,16 @@ All notable changes to the BreachSpider MCP server. This project follows [Semant
   counts), with a note that only products with CVEs are listed. Customer keys only.
 - `safety.hosted_refusal` and `safety.identifying_reason`.
 
+- Warning codes `FAMILY_ONLY_MATCH` (a bare family name matched over many models: answered, confidence below HIGH,
+  needs review) and `PRODUCT_LINE_ADDED` (the vendor's product-line name was added to resolve, e.g. SIMATIC).
+- `correlate_devices`: `findings_note` when the findings are cut short ("showing 25 of 60 ...").
+- `search_products`: an "X Firmware" catalog entry is shown under "X" as `also_listed_as`, so the pair uses one of
+  the 15 places. Needs the BreachSpider API from November 2026 (`group_firmware`).
+
 ### Changed
 - The check_windows_host description states the per-call cap of the profile in use.
+- `lookup_cve`: when fixed versions vary by product and one product's fix is named, the note says fixes for other
+  affected products, if any, are in the vendor advisories.
 
 ## 0.2.0 (2026-11-02)
 
