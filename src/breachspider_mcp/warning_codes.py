@@ -19,6 +19,7 @@ WARNING_CODES = {
     'GENERIC_FAMILY_NAME': 'The product is a generic family name; candidates are offered.',
     'CANONICAL_SELECTED': 'Close candidates were variants of the exact-name product; that product was chosen.',
     'FAMILY_ONLY_MATCH': 'Only the product family matched; send the exact model or order number for a complete check.',
+    'LIKELY_NOT_AFFECTED': 'CVEs with no version limit in the CVE record whose vendor-stated fixed version is at or below the device version; listed, not open, needs review.',
     'PRODUCT_LINE_ADDED': "Matched after adding the vendor's product-line name (for example SIMATIC) in front of the model.",
     'VENDOR_ALIAS_APPLIED': 'Vendor spelling mapped to its canonical name.',
     'VENDOR_RESOLVED_PRODUCT_NOT_FOUND': 'Vendor recognised, product not found.',

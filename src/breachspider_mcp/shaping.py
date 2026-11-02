@@ -311,6 +311,11 @@ def asset_result(r: Dict[str, Any], filtered: bool) -> Dict[str, Any]:
         "fix_plan": fix_plan(r.get("fix_plan")),
         "findings": [finding(c) for c in cves],
     }
+    lna = next((w.get("cve_ids") for w in r.get("warnings") or [] if isinstance(w, dict)
+                and w.get("code") == "LIKELY_NOT_AFFECTED"), None)
+    if lna:
+        # Retest issue 3 (2026-11-02): these sort last and are often past max_findings; name them in the header.
+        out["likely_not_affected"] = [cap(str(x), 40) for x in lna[:100]]
     lc, fw = lifecycle(r.get("lifecycle")), firmware(r.get("firmware_currency"))
     if lc:
         out["lifecycle"] = lc

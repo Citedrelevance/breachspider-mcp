@@ -16,6 +16,8 @@ All notable changes to the BreachSpider MCP server. This project follows [Semant
 - Warning codes `FAMILY_ONLY_MATCH` (a bare family name matched over many models: answered, confidence below HIGH,
   needs review) and `PRODUCT_LINE_ADDED` (the vendor's product-line name was added to resolve, e.g. SIMATIC).
 - `correlate_devices`: `findings_note` when the findings are cut short ("showing 25 of 60 ...").
+- Warning code `LIKELY_NOT_AFFECTED`; `correlate_devices` names those CVEs in `likely_not_affected` (they sort last and
+  are often past max_findings).
 - `search_products`: an "X Firmware" catalog entry is shown under "X" as `also_listed_as`, so the pair uses one of
   the 15 places. Needs the BreachSpider API from November 2026 (`group_firmware`).
 

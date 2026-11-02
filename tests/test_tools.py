@@ -419,3 +419,14 @@ def test_truncated_findings_are_said_so(keyed_server, mocked):
     assert not err
     first = out["results"][0]
     assert "of 60 findings" in first["findings_note"] and "max_findings" in first["findings_note"]
+
+
+def test_likely_not_affected_named_in_header(keyed_server, mocked):
+    body = fixture("correlate_mixed.json")
+    r0 = body["data"]["results"][0]
+    r0["warnings"] = (r0.get("warnings") or []) + [{"code": "LIKELY_NOT_AFFECTED", "message": "2 CVEs ...",
+                                                     "cve_ids": ["CVE-2017-12741", "CVE-2018-13815"]}]
+    mocked.add(responses.POST, CORRELATE, json=body)
+    err, out = call(keyed_server, "correlate_devices", {"assets": [{"vendor": "Siemens", "product": "S7-1200", "version": "4.5"}]})
+    assert not err
+    assert out["results"][0]["likely_not_affected"] == ["CVE-2017-12741", "CVE-2018-13815"]
