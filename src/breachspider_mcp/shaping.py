@@ -384,6 +384,9 @@ def cve_record(d: Dict[str, Any]) -> Dict[str, Any]:
         "epss": _epss(scoring),
         "vendors": (affected.get("vendors") or [])[:5],
         "products": (affected.get("products") or [])[:5],
+        # Audit L5 (2026-11-02): say when the lists are cut, so five names never read as the whole set.
+        "vendors_total": len(affected.get("vendors") or []) if len(affected.get("vendors") or []) > 5 else None,
+        "products_total": len(affected.get("products") or []) if len(affected.get("products") or []) > 5 else None,
         "cwes": [f"CWE-{c.get('id')}" for c in cls.get("cwes") or [] if c.get("id") is not None],
         "fix": _drop_empty({"status": patch.get("status"), "available": patch.get("patch_available"),
                             "version": patch.get("patch_version"), "url": patch.get("patch_url"),

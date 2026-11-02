@@ -83,6 +83,7 @@ is sent.
 
 # The hosted server at mcp.breachspider.com (plan D7): every synchronous call must finish well under 30 s, so calls
 # are capped per call; larger work goes to the batch tools.
+_HASH_SHAPE = re.compile(r"^sha256:[0-9a-f]{64}$")
 HOSTED_CAPS = {"devices": 25, "windows_hosts": 5, "check_changes": 200}
 
 HOSTED_RULE = ("* Never send host names, IP or MAC addresses, serial numbers, email addresses, user names or site "
@@ -341,10 +342,19 @@ def build_server(api: Optional[API] = None, *, hosted: bool = False,
                 a["status_facts"] = facts
         body = await _call(api, "POST", CHECK_PATH, {"assets": cleaned})
         rows = (body.get("data") or {}).get("results") or []
+        sent_hashes = {a.get("asset_id"): a.get("result_hash") for a in cleaned}
         results = []
         for r in rows:
             item = {"asset_id": r.get("asset_id"), "changed": bool(r.get("changed")),
                     "current_hash": r.get("current_hash"), "reason": r.get("reason")}
+            sent_hash = sent_hashes.get(r.get("asset_id"))
+            notes = [r["note"]] if r.get("note") else []
+            if sent_hash and not _HASH_SHAPE.match(str(sent_hash)) and not any("not a hash" in n for n in notes):
+                # Audit M5 (2026-11-02): say plainly that the value is not a result_hash.
+                notes.append("the result_hash sent is not one returned by correlate_devices (sha256:<64 hex>); "
+                             "run correlate_devices for this device")
+            if notes:
+                item["note"] = shaping.cap("; ".join(notes))
             if "status_changed" in r:
                 item.update({"status_changed": bool(r.get("status_changed")),
                              "current_status_hash": r.get("current_status_hash"),
