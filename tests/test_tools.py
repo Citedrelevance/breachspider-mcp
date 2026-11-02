@@ -408,3 +408,14 @@ def test_part_number_sent_when_given(keyed_server, mocked):
     mocked.add(responses.POST, CORRELATE, json=fixture("correlate_eds518a.json"))
     call(keyed_server, "correlate_devices", {"assets": [{"vendor": "Moxa", "product": "EDS-518A", "version": "V3.5"}]})
     assert "part_number" not in _sent(mocked)["assets"][0]
+
+
+def test_truncated_findings_are_said_so(keyed_server, mocked):
+    body = fixture("correlate_mixed.json")
+    r0 = body["data"]["results"][0]
+    r0["cves_page"] = {**(r0.get("cves_page") or {}), "total": 60, "has_more": True}
+    mocked.add(responses.POST, CORRELATE, json=body)
+    err, out = call(keyed_server, "correlate_devices", {"assets": [{"vendor": "Moxa", "product": "EDS-518A", "version": "3.5"}]})
+    assert not err
+    first = out["results"][0]
+    assert "of 60 findings" in first["findings_note"] and "max_findings" in first["findings_note"]

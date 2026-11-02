@@ -318,6 +318,10 @@ def asset_result(r: Dict[str, Any], filtered: bool) -> Dict[str, Any]:
         out["firmware"] = fw
     if filtered and page.get("total_unfiltered") is not None:
         out["total_unfiltered"] = page.get("total_unfiltered")
+    if out["has_more"] and total:
+        # Finding 5 (2026-11-02): say plainly that the list is cut short, so it is never read as the whole picture.
+        out["findings_note"] = (f"Showing the top {len(out['findings'])} of {total} findings by priority. The fix plan "
+                                f"covers all {total}; raise max_findings (up to 100) to see more in detail.")
     if status == "ambiguous":
         out["candidates"] = _candidates(r.get("candidates") or [])
     if coverage is None:
