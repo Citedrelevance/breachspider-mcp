@@ -17,11 +17,15 @@ strings needed.
 | `get_fix_plan` | `asset` (one `vendor`, `product`, `version`) | Fix groups and fix plan for one device |
 | `lookup_cve` | `cve_id` (for example `CVE-2024-9137`) | BreachSpider's record for one CVE, trimmed |
 | `check_windows_host` | `assets` (list of `os_product`, `edition_id`, `os_build`, `architecture`, optional `installed_kbs`, `installation_type`, `esu_enrolled`, `display_version`, `asset_id`); optional `max_findings` | Windows hosts against Microsoft's own patch data, stored nowhere: confirmed open, cleared and needs review counts, the top open and needs review CVEs with fixed build, KB and Microsoft source, fix groups and a `result_hash` |
+| `submit_device_batch` | `assets` (as for `correlate_devices`, up to 5,000); optional `max_findings` (default 10) | Queues one batch job for a long inventory and returns a `job_id` at once. The same list sent again within 24 hours returns the original job, so a retry never charges twice |
+| `get_device_batch` | `job_id`; optional `cursor`, `page_size` (default 20, at most 50) | Progress while the job runs; once finished, the summary and a page of results (each the same as a `correlate_devices` result) with `next_cursor` |
 
-All five are read only. The first four use the three endpoints a trial key can call:
+All are read only except `submit_device_batch`, which queues a job and uses the key's quota. The first four use the three endpoints a trial key can call:
 `POST /api/v1/assets/correlate-cves`, `POST /api/v1/assets/correlate-cves/check` and `GET /api/v1/cves/{id}`.
 `check_windows_host` uses `POST /api/v2/assets/check-windows`, which stores nothing about the hosts and needs a
 partner or customer key; trial keys and demo mode cannot use it. It takes at most 25 hosts per call.
+The batch tools use `POST /api/v1/batches` and `GET /api/v1/batches/{id}` (and `/results`). They need a partner or
+customer key with batch jobs enabled; trial keys and demo mode cannot use them. Results are kept 30 days.
 
 ## Install
 

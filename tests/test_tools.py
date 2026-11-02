@@ -14,11 +14,12 @@ def _sent(mocked, i=-1):
 
 # ------------------------------------------------------------ listing
 
-def test_five_tools_listed_read_only(keyed_server):
+def test_tools_listed_read_only(keyed_server):
     tools = {t.name: t for t in list_tools(keyed_server)}
-    assert set(tools) == {"correlate_devices", "check_changes", "get_fix_plan", "lookup_cve", "check_windows_host"}
-    for t in tools.values():
-        assert t.annotations.read_only_hint is True
+    assert set(tools) == {"correlate_devices", "check_changes", "get_fix_plan", "lookup_cve", "check_windows_host",
+                          "submit_device_batch", "get_device_batch"}
+    for name, t in tools.items():
+        assert t.annotations.read_only_hint is (name != "submit_device_batch")   # submit queues a job
         assert t.annotations.destructive_hint is False
     props = tools["correlate_devices"].input_schema["properties"]
     assert {"assets", "confirmed_only", "known_exploited_only", "fix_available_only", "max_findings"} <= set(props)

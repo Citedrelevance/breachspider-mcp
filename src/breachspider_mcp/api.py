@@ -22,6 +22,7 @@ DEMO_NOTICE = "demo mode: public example access only"
 
 CORRELATE_PATH = "/api/v1/assets/correlate-cves"
 CHECK_PATH = "/api/v1/assets/correlate-cves/check"
+BATCH_PATH = "/api/v1/batches"
 
 
 class ToolFailure(Exception):
@@ -71,14 +72,20 @@ class API:
                     raise self._failure(e) from None
             return self._client
 
-    def request(self, method: str, path: str, json: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def request(self, method: str, path: str, json: Optional[Dict[str, Any]] = None,
+                params: Optional[Dict[str, Any]] = None, headers: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
         client = self._get()
+        kw: Dict[str, Any] = {"json": json}
+        if params:
+            kw["params"] = params
+        if headers:
+            kw["headers"] = headers
         try:
-            return client.request(method, path, json=json)
+            return client.request(method, path, **kw)
         except bs_exc.AuthenticationError as e:
             if self.demo:  # demo tokens last 24h; mint a new one once
                 try:
-                    return self._get(fresh=True).request(method, path, json=json)
+                    return self._get(fresh=True).request(method, path, **kw)
                 except bs_exc.BreachSpiderError as e2:
                     raise self._failure(e2) from None
             raise self._failure(e) from None

@@ -2,6 +2,21 @@
 
 All notable changes to the BreachSpider MCP server. This project follows [Semantic Versioning](https://semver.org/).
 
+## 0.2.0 (unreleased)
+
+### Added
+- `submit_device_batch`: queue up to 5,000 devices as one batch job (`POST /api/v1/batches`) and get a `job_id` at
+  once. Identifying fields are stripped as in `correlate_devices`. The Idempotency-Key is derived from the cleaned
+  body, so sending the same list again within 24 hours returns the original job and never charges twice.
+- `get_device_batch`: job status and progress; once finished, the summary and one page of results (same shape and
+  honesty rules as `correlate_devices`) with `next_cursor` for the next page. Failed devices are listed with their
+  `error_code`.
+- Both need a partner or customer key with batch jobs enabled; demo mode refuses them without calling the API, and
+  a key without batch jobs gets a plain message instead of "Not found".
+
+### Changed
+- Requires `breachspider>=0.4.0` (request headers).
+
 ## 0.1.9 (2026-10-27)
 
 ### Added

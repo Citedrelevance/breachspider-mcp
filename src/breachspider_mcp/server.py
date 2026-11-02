@@ -5,13 +5,17 @@ Four tools over the three endpoints a trial key can call:
     check_changes      POST /api/v1/assets/correlate-cves/check
     get_fix_plan       POST /api/v1/assets/correlate-cves (one asset, fix data only)
     lookup_cve         GET  /api/v1/cves/{cve_id}
-and one that needs a partner or customer key (stateless, stores nothing):
-    check_windows_host POST /api/v2/assets/check-windows
+and ones that need a partner or customer key:
+    check_windows_host   POST /api/v2/assets/check-windows (stateless, stores nothing)
+    submit_device_batch  POST /api/v1/batches (key with batch jobs enabled)
+    get_device_batch     GET  /api/v1/batches/{id} and /results
 """
 
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
+import json as _json
 import re
 from typing import Annotated, Any, Dict, List, Literal, Optional
 
@@ -28,12 +32,24 @@ except ImportError:  # mcp 1.x
 from mcp.types import ToolAnnotations
 
 from . import __version__, shaping
-from .api import API, CHECK_PATH, CORRELATE_PATH, DEMO_NOTICE, DEVELOPERS_URL, CONTACT_URL, ToolFailure, agent_sentence, format_failure
+from .api import API, BATCH_PATH, CHECK_PATH, CORRELATE_PATH, DEMO_NOTICE, DEVELOPERS_URL, CONTACT_URL, ToolFailure, agent_sentence, format_failure
 from .safety import clean_assets, clean_windows_hosts
 
 MAX_FINDINGS = 100
 WINDOWS_PATH = "/api/v2/assets/check-windows"
 MAX_WINDOWS_HOSTS = 25
+MAX_BATCH_DEVICES = 5000
+BATCH_PAGE_MAX = 50
+_JOB_ID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+_BATCH_FINAL = ("succeeded", "partial", "failed", "cancelled")
+_BATCH_404 = {
+    "contact_us": ("Do not retry this call; batch jobs are not enabled for this API key. Tell the user to ask "
+                   "BreachSpider to enable them, or use correlate_devices for smaller lists.",
+                   f"Batch jobs are enabled per partner or customer key. Talk to us: {CONTACT_URL}"),
+    "fix_input": ("Do not retry this call unchanged; no batch job with this job_id was found for this key. Use the "
+                  "job_id that submit_device_batch returned.",
+                  "Jobs are visible only to the organization that submitted them and expire after 30 days."),
+}
 _CVE_ID = re.compile(r"^CVE-\d{4}-\d{4,}$")
 
 INSTRUCTIONS = """\
@@ -54,6 +70,9 @@ It stores nothing. Report needs review and hosts that are not patch resolved hon
 * When a tool call fails, read the retry_guidance at the end of the error. Never retry when retryable is false; \
 follow action instead (fix_input, reduce_batch, use_different_key, contact_us, wait_until_reset). When retryable \
 is true, wait retry_after_seconds before retrying.
+* For long inventories (hundreds or thousands of devices) use submit_device_batch, then get_device_batch with the \
+job_id until the job is finished, reading results page by page with next_cursor. It needs a key with batch jobs \
+enabled. Each result has the same honesty rules as correlate_devices.
 * Never send host names, IP or MAC addresses, user names or site names. Identifying fields are stripped \
 before sending and reported in privacy.dropped_identifying_fields.
 """
@@ -118,9 +137,10 @@ def _envelope(api: API, body: Dict[str, Any], privacy: Dict[str, Any]) -> Dict[s
     return out
 
 
-async def _call(api: API, method: str, path: str, json: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+async def _call(api: API, method: str, path: str, json: Optional[Dict[str, Any]] = None,
+                params: Optional[Dict[str, Any]] = None, headers: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     try:
-        return await anyio.to_thread.run_sync(lambda: api.request(method, path, json=json))
+        return await anyio.to_thread.run_sync(lambda: api.request(method, path, json=json, params=params, headers=headers))
     except ToolFailure as e:
         msg = e.message
         if api.demo and DEMO_NOTICE not in msg:
@@ -128,10 +148,22 @@ async def _call(api: API, method: str, path: str, json: Optional[Dict[str, Any]]
         raise ToolError(format_failure(e.sentence, msg, e.guidance)) from None
 
 
-def _fail(message: str, action: str, demo: bool = False) -> ToolError:
+def _fail(message: str, action: str, demo: bool = False, sentence: str = "") -> ToolError:
     """A failure found before calling the API: not retryable, with the same retry guidance as API errors."""
     g = {"retryable": False, "retry_after_seconds": None, "action": action}
-    return ToolError(str(ToolFailure(message, g, agent_sentence(g, demo=demo))))
+    return ToolError(str(ToolFailure(message, g, sentence or agent_sentence(g, demo=demo))))
+
+
+async def _batch_call(api: API, method: str, path: str, on_404: str, **kw: Any) -> Dict[str, Any]:
+    """Batch routes answer 404 for keys without batch jobs and for unknown jobs; say which plainly.
+    on_404 is contact_us (submit: batches are off for this key) or fix_input (status/results: wrong job_id)."""
+    try:
+        return await anyio.to_thread.run_sync(lambda: api.request(method, path, **kw))
+    except ToolFailure as e:
+        if e.message.startswith("Not found"):
+            sentence, msg = _BATCH_404[on_404]
+            raise _fail(msg, on_404, sentence=sentence) from None
+        raise ToolError(format_failure(e.sentence, e.message, e.guidance)) from None
 
 
 def _correlate_body(assets, *, page_size: int, confirmed_only=False, known_exploited_only=False,
@@ -362,6 +394,114 @@ def build_server(api: Optional[API] = None) -> Any:
             "results": [shaping.windows_host_result(h) for h in data.get("assets") or []],
             **({"rejected": rejected} if rejected else {}),
         }, privacy)
+
+    @mcp.tool(
+        annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=True),
+        structured_output=False,
+        description=(
+            "Queue a batch job that checks a long device list (up to 5,000 devices) for the CVEs affecting each exact "
+            "version. Returns at once with a job_id; then call get_device_batch with it until the job is finished and "
+            "read the results page by page. Each result is the same as a correlate_devices result. Use this instead "
+            "of correlate_devices for hundreds or thousands of devices. The job uses the key's quota for every device "
+            "when it is queued (devices left unprocessed after a cancel are refunded). Sending the exact same list "
+            "and max_findings again within 24 hours returns the original job instead of a new one, so a retry never "
+            "charges twice. Needs a partner or customer key with batch jobs enabled; trial keys and demo mode cannot "
+            "use it. Never send host names, IP or MAC addresses, user names or site names; such fields are stripped "
+            "and listed under privacy."
+
+            " If a call fails, the error starts with what to do and ends with retry_guidance (retryable, "
+            "retry_after_seconds, action): never retry when retryable is false."
+        ),
+    )
+    async def submit_device_batch(
+        assets: Annotated[List[Device], Field(min_length=1, max_length=MAX_BATCH_DEVICES, description="Devices to check, at most 5,000: vendor, product, version and an optional neutral asset_id.")],
+        max_findings: Annotated[int, Field(ge=1, le=MAX_FINDINGS, description="Findings kept per device, highest priority first.")] = 10,
+    ) -> Dict[str, Any]:
+        if api.demo:
+            raise _fail(f"submit_device_batch is not available in {DEMO_NOTICE}, and trial keys cannot use it "
+                        f"either. It needs a partner or customer API key with batch jobs enabled in "
+                        f"BREACHSPIDER_API_KEY. Talk to us: {CONTACT_URL} (developer page: {DEVELOPERS_URL}).",
+                        "use_different_key", demo=True)
+        cleaned, privacy = clean_assets(_raw(assets))
+        body = _correlate_body(cleaned, page_size=max_findings)
+        # Same list, same options -> same key -> the API returns the original job (24 h): retries never double charge.
+        idem = "mcp-" + hashlib.sha256(_json.dumps(body, sort_keys=True, default=str).encode()).hexdigest()[:48]
+        resp = await _batch_call(api, "POST", BATCH_PATH, "contact_us", json=body, headers={"Idempotency-Key": idem})
+        data = resp.get("data") or {}
+        return _envelope(api, {
+            "job_id": data.get("job_id"),
+            "status": {"complete": "succeeded"}.get(data.get("status"), data.get("status")),  # replay sends the raw status
+            "devices_queued": len(cleaned),
+            "created_at": data.get("created_at"),
+            "next_step": "Call get_device_batch with this job_id. A job of a few hundred devices usually finishes "
+                         "within a minute; wait about 10 seconds between status checks.",
+        }, privacy)
+
+    @mcp.tool(
+        annotations=_READ_ONLY,
+        structured_output=False,
+        description=(
+            "Status and results of a batch job from submit_device_batch. While the job is queued or running it "
+            "returns progress (done, failed, total); once finished it returns the summary and one page of results "
+            "in submission order. Each result has the same fields and honesty rules as correlate_devices: report "
+            "needs_review and partial coverage honestly and never call an empty, unresolved or partial result clean. "
+            "When next_cursor is not null, call again with cursor=next_cursor for the next page. Devices that "
+            "failed are listed with an error_code. Results are kept 30 days."
+
+            " If a call fails, the error starts with what to do and ends with retry_guidance (retryable, "
+            "retry_after_seconds, action): never retry when retryable is false."
+        ),
+    )
+    async def get_device_batch(
+        job_id: Annotated[str, Field(description="The job_id returned by submit_device_batch.")],
+        cursor: Annotated[Optional[int], Field(ge=-1, description="The next_cursor from the previous page; leave out for the first page.")] = None,
+        page_size: Annotated[int, Field(ge=1, le=BATCH_PAGE_MAX, description="Devices per page, at most 50.")] = 20,
+    ) -> Dict[str, Any]:
+        if api.demo:
+            raise _fail(f"get_device_batch is not available in {DEMO_NOTICE}. It needs a partner or customer API "
+                        f"key with batch jobs enabled. Talk to us: {CONTACT_URL}", "use_different_key", demo=True)
+        jid = (job_id or "").strip()
+        if not _JOB_ID.match(jid):
+            raise _fail("job_id must be the job_id returned by submit_device_batch (a UUID).", "fix_input")
+        st = (await _batch_call(api, "GET", f"{BATCH_PATH}/{jid}", "fix_input")).get("data") or {}
+        status = st.get("status")
+        out: Dict[str, Any] = {
+            "job_id": jid,
+            "status": status,
+            "progress": st.get("progress"),
+            "finished": status in _BATCH_FINAL,
+        }
+        if status not in _BATCH_FINAL:
+            out["next_step"] = "Not finished yet. Wait about 10 seconds and call get_device_batch again."
+            if st.get("cancel_requested"):
+                out["cancel_requested"] = True
+            return _envelope(api, out, {})
+        out["finished_at"] = st.get("finished_at")
+        out["expires_at"] = st.get("expires_at")
+        if st.get("summary"):
+            out["summary"] = st.get("summary")
+        if st.get("error_summary"):
+            out["error_summary"] = st.get("error_summary")
+        page = await _batch_call(api, "GET", f"{BATCH_PATH}/{jid}/results", "fix_input",
+                                 params={"cursor": -1 if cursor is None else cursor, "limit": page_size})
+        results, failed = [], []
+        for item in (page.get("data") or {}).get("items") or []:
+            if item.get("state") == "done" and isinstance(item.get("result"), dict):
+                r = shaping.asset_result(item["result"], False)
+                r["idx"] = item.get("idx")
+                results.append(r)
+            else:
+                failed.append({"idx": item.get("idx"), "error_code": shaping.cap(item.get("error_code"), 60)})
+        out["results"] = results
+        if failed:
+            out["failed"] = failed
+        nxt = (page.get("meta") or {}).get("next_cursor")
+        out["next_cursor"] = nxt
+        if nxt is not None:
+            out["next_step"] = "More results: call get_device_batch again with cursor=next_cursor."
+        if status == "cancelled":
+            out["note"] = "The job was cancelled: only the devices processed before the cancel have results."
+        return _envelope(api, out, {})
 
     return mcp
 
