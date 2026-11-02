@@ -145,3 +145,39 @@ def clean_windows_hosts(hosts: Iterable[Any]) -> Tuple[List[Dict[str, Any]], Dic
     if extra_ignored:
         report["ignored_fields"] = sorted(set(report.get("ignored_fields", [])) | extra_ignored)
     return cleaned, report
+
+
+def identifying_reason(value: Any) -> str:
+    """What an asset_id looks like, for a refusal that names the reason and never the value."""
+    v = _text(value)
+    if len(v) > MAX_ASSET_ID:
+        return f"is longer than {MAX_ASSET_ID} characters"
+    if _EMAIL.search(v):
+        return "looks like an email address"
+    if _MAC.search(v):
+        return "looks like a MAC address"
+    if _IPV4.search(v) or (":" in v and _IPV6.search(v) and not _looks_like_version(v)):
+        return "looks like an IP address"
+    return "looks like a host name"
+
+
+def hosted_refusal(raw_items: Iterable[Any], report: Dict[str, Any]) -> str:
+    """The hosted server refuses instead of stripping (plan 2.5): a message naming the field and the reason, never
+    the value, so the model learns to stop sending it. Empty when nothing identifying was sent."""
+    if not report:
+        return ""
+    parts = []
+    for name in report.get("dropped_identifying_fields") or []:
+        parts.append(f"the field {name} is identifying")
+    for name in report.get("ignored_fields") or []:
+        parts.append(f"the field {name} is not accepted")
+    for i, raw in enumerate(raw_items, start=1):
+        item = raw if isinstance(raw, dict) else dict(raw)
+        aid = item.get("asset_id")
+        if aid is not None and _text(aid) and looks_identifying(aid):
+            parts.append(f"asset {i}: asset_id {identifying_reason(aid)}")
+    if not parts:
+        return ""
+    return ("Refused, nothing was sent: " + "; ".join(parts[:10]) + ". Send only vendor, product, version and a "
+            "neutral asset_id such as PLC-01; never host names, IP or MAC addresses, serial numbers, email addresses "
+            "or user names.")

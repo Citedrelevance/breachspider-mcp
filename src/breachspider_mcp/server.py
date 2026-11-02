@@ -11,7 +11,6 @@ and ones that need a partner or customer key:
     get_device_batch     GET  /api/v1/batches/{id} and /results
 """
 
-from __future__ import annotations
 
 import datetime as dt
 import hashlib
@@ -33,7 +32,7 @@ from mcp.types import ToolAnnotations
 
 from . import __version__, shaping
 from .api import API, BATCH_PATH, CHECK_PATH, CORRELATE_PATH, DEMO_NOTICE, DEVELOPERS_URL, CONTACT_URL, ToolFailure, agent_sentence, format_failure
-from .safety import clean_assets, clean_windows_hosts
+from .safety import clean_assets, clean_windows_hosts, hosted_refusal
 
 MAX_FINDINGS = 100
 WINDOWS_PATH = "/api/v2/assets/check-windows"
@@ -76,6 +75,16 @@ enabled. Each result has the same honesty rules as correlate_devices.
 * Never send host names, IP or MAC addresses, user names or site names. Identifying fields are stripped \
 before sending and reported in privacy.dropped_identifying_fields.
 """
+
+# The hosted server at mcp.breachspider.com (plan D7): every synchronous call must finish well under 30 s, so calls
+# are capped per call; larger work goes to the batch tools.
+HOSTED_CAPS = {"devices": 25, "windows_hosts": 5, "check_changes": 200}
+
+HOSTED_RULE = ("* Never send host names, IP or MAC addresses, serial numbers, email addresses, user names or site "
+               "names. This server refuses them, names the field and the reason, and sends nothing; send a neutral "
+               "asset_id such as PLC-01 instead.\n"
+               "* Per call: at most 25 devices for correlate_devices, 5 hosts for check_windows_host and 200 devices "
+               "for check_changes. For more devices use submit_device_batch.\n")
 
 _READ_ONLY = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True)
 
@@ -178,10 +187,45 @@ def _correlate_body(assets, *, page_size: int, confirmed_only=False, known_explo
     return {"assets": assets, "options": options}
 
 
-def build_server(api: Optional[API] = None) -> Any:
+class HostedDevice(Device):
+    model_config = ConfigDict(extra="forbid")
+
+
+class HostedDeviceWithHash(DeviceWithHash):
+    model_config = ConfigDict(extra="forbid")
+
+
+class HostedWindowsHost(WindowsHost):
+    model_config = ConfigDict(extra="forbid")
+
+
+def build_server(api: Optional[API] = None, *, hosted: bool = False,
+                 server_kwargs: Optional[Dict[str, Any]] = None) -> Any:
+    """The MCP server. hosted=True is the profile for mcp.breachspider.com: the same tools, names and shaping, but
+    unknown fields are a schema error, identifying values are refused (not replaced), each call is capped
+    (HOSTED_CAPS) and demo mode does not exist. server_kwargs go to the SDK server (token_verifier, auth)."""
     api = api or API()
-    mcp = _Server("breachspider", instructions=INSTRUCTIONS, version=__version__) \
-        if _Server.__name__ == "MCPServer" else _Server("breachspider", instructions=INSTRUCTIONS)
+    if hosted and api.demo:
+        raise ValueError("the hosted profile needs an authenticated API (no demo mode)")
+    instructions = INSTRUCTIONS
+    if hosted:
+        instructions = instructions.split("* Never send host names")[0] + HOSTED_RULE
+    kw = dict(server_kwargs or {})
+    mcp = _Server("breachspider", instructions=instructions, version=__version__, **kw) \
+        if _Server.__name__ == "MCPServer" else _Server("breachspider", instructions=instructions, **kw)
+    D = HostedDevice if hosted else Device
+    DH = HostedDeviceWithHash if hosted else DeviceWithHash
+    WH = HostedWindowsHost if hosted else WindowsHost
+    cap_dev = HOSTED_CAPS["devices"] if hosted else None
+    cap_win = HOSTED_CAPS["windows_hosts"] if hosted else MAX_WINDOWS_HOSTS
+    cap_chk = HOSTED_CAPS["check_changes"] if hosted else None
+
+    def guard(raw_items, privacy) -> None:
+        """Hosted: refuse anything identifying before calling the API."""
+        if hosted:
+            msg = hosted_refusal(raw_items, privacy)
+            if msg:
+                raise _fail(msg, "fix_input")
 
     @mcp.tool(
         annotations=_READ_ONLY,
@@ -206,13 +250,15 @@ def build_server(api: Optional[API] = None) -> Any:
         ),
     )
     async def correlate_devices(
-        assets: Annotated[List[Device], Field(min_length=1, description="Devices to check: vendor, product, version and an optional neutral asset_id.")],
+        assets: Annotated[List[D], Field(min_length=1, max_length=cap_dev, description="Devices to check: vendor, product, version and an optional neutral asset_id.")],
         confirmed_only: Annotated[bool, Field(description="Only CVEs confirmed for this version by a version range.")] = False,
         known_exploited_only: Annotated[bool, Field(description="Only known-exploited CVEs.")] = False,
         fix_available_only: Annotated[bool, Field(description="Only CVEs with a fix available.")] = False,
         max_findings: Annotated[int, Field(ge=1, le=MAX_FINDINGS, description="Findings returned per device, highest priority first.")] = 25,
     ) -> Dict[str, Any]:
-        cleaned, privacy = clean_assets(_raw(assets))
+        raw = _raw(assets)
+        cleaned, privacy = clean_assets(raw)
+        guard(raw, privacy)
         filtered = bool(confirmed_only or known_exploited_only or fix_available_only)
         body = await _call(api, "POST", CORRELATE_PATH, _correlate_body(
             cleaned, page_size=max_findings, confirmed_only=confirmed_only,
@@ -246,11 +292,12 @@ def build_server(api: Optional[API] = None) -> Any:
         ),
     )
     async def check_changes(
-        assets: Annotated[List[DeviceWithHash], Field(min_length=1, description="Devices with the result_hash from an earlier correlate_devices call.")],
+        assets: Annotated[List[DH], Field(min_length=1, max_length=cap_chk, description="Devices with the result_hash from an earlier correlate_devices call.")],
     ) -> Dict[str, Any]:
         raw = _raw(assets)
         cleaned, privacy = clean_assets([{k: v for k, v in x.items() if k != "status_facts"} for x in raw],
                                         extra_fields=("result_hash", "status_hash"))
+        guard(raw, privacy)
         missing = [a["asset_id"] for a in cleaned if not a.get("result_hash")]
         if missing:
             raise _fail("Every asset needs a result_hash from an earlier correlate_devices call. Missing for: "
@@ -305,9 +352,11 @@ def build_server(api: Optional[API] = None) -> Any:
         ),
     )
     async def get_fix_plan(
-        asset: Annotated[Device, Field(description="One device: vendor, product, version.")],
+        asset: Annotated[D, Field(description="One device: vendor, product, version.")],
     ) -> Dict[str, Any]:
-        cleaned, privacy = clean_assets(_raw([asset]))
+        raw = _raw([asset])
+        cleaned, privacy = clean_assets(raw)
+        guard(raw, privacy)
         body = await _call(api, "POST", CORRELATE_PATH, _correlate_body(cleaned, page_size=1))
         rows = (body.get("data") or {}).get("results") or []
         if not rows:
@@ -358,7 +407,7 @@ def build_server(api: Optional[API] = None) -> Any:
             "review findings in priority order (known-exploited first) with the fixed build, KB and Microsoft "
             "source, the fix groups (which update clears which CVEs) and a result_hash. Report needs review and "
             "hosts that are not patch resolved honestly: never call them clean, and repeat the assessment. Needs a "
-            "partner or customer API key; trial keys and demo mode cannot use it. At most 25 hosts per call. Never "
+            f"partner or customer API key; trial keys and demo mode cannot use it. At most {cap_win} hosts per call. Never "
             "send host names, IP or MAC addresses, user names or site names; such fields are stripped and listed "
             "under privacy."
 
@@ -367,14 +416,16 @@ def build_server(api: Optional[API] = None) -> Any:
         ),
     )
     async def check_windows_host(
-        assets: Annotated[List[WindowsHost], Field(min_length=1, max_length=MAX_WINDOWS_HOSTS, description="Windows hosts to check, at most 25.")],
+        assets: Annotated[List[WH], Field(min_length=1, max_length=cap_win, description=f"Windows hosts to check, at most {cap_win}.")],
         max_findings: Annotated[int, Field(ge=1, le=MAX_FINDINGS, description="Open and needs review findings returned per host, highest priority first.")] = 25,
     ) -> Dict[str, Any]:
         if api.demo:
             raise _fail(f"check_windows_host is not available in {DEMO_NOTICE}, and trial keys cannot use it "
                         f"either. It needs a partner or customer API key in BREACHSPIDER_API_KEY. Talk to us: "
                         f"{CONTACT_URL} (developer page: {DEVELOPERS_URL}).", "use_different_key", demo=True)
-        cleaned, privacy = clean_windows_hosts(_raw(assets))
+        raw = _raw(assets)
+        cleaned, privacy = clean_windows_hosts(raw)
+        guard(raw, privacy)
         now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
         for h in cleaned:
             h.setdefault("collected_at", now)       # the caller's collection time when given; the API validates it
@@ -414,7 +465,7 @@ def build_server(api: Optional[API] = None) -> Any:
         ),
     )
     async def submit_device_batch(
-        assets: Annotated[List[Device], Field(min_length=1, max_length=MAX_BATCH_DEVICES, description="Devices to check, at most 5,000: vendor, product, version and an optional neutral asset_id.")],
+        assets: Annotated[List[D], Field(min_length=1, max_length=MAX_BATCH_DEVICES, description="Devices to check, at most 5,000: vendor, product, version and an optional neutral asset_id.")],
         max_findings: Annotated[int, Field(ge=1, le=MAX_FINDINGS, description="Findings kept per device, highest priority first.")] = 10,
     ) -> Dict[str, Any]:
         if api.demo:
@@ -422,7 +473,9 @@ def build_server(api: Optional[API] = None) -> Any:
                         f"either. It needs a partner or customer API key with batch jobs enabled in "
                         f"BREACHSPIDER_API_KEY. Talk to us: {CONTACT_URL} (developer page: {DEVELOPERS_URL}).",
                         "use_different_key", demo=True)
-        cleaned, privacy = clean_assets(_raw(assets))
+        raw = _raw(assets)
+        cleaned, privacy = clean_assets(raw)
+        guard(raw, privacy)
         body = _correlate_body(cleaned, page_size=max_findings)
         # Same list, same options -> same key -> the API returns the original job (24 h): retries never double charge.
         idem = "mcp-" + hashlib.sha256(_json.dumps(body, sort_keys=True, default=str).encode()).hexdigest()[:48]

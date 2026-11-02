@@ -2,6 +2,18 @@
 
 All notable changes to the BreachSpider MCP server. This project follows [Semantic Versioning](https://semver.org/).
 
+## 0.3.0 (unreleased)
+
+### Added
+- `build_server(hosted=True, server_kwargs=...)`: the profile for the hosted server at mcp.breachspider.com. Same
+  tools, names and result shaping; unknown fields are a schema error; identifying values (an asset_id that looks
+  like an IP, MAC or email address or a host name) are refused with the field and the reason, never the value, and
+  nothing is sent; per-call caps of 25 devices, 5 Windows hosts and 200 change checks; no demo mode.
+- `safety.hosted_refusal` and `safety.identifying_reason`.
+
+### Changed
+- The check_windows_host description states the per-call cap of the profile in use.
+
 ## 0.2.0 (2026-11-02)
 
 ### Added
