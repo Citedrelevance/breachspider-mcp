@@ -2,7 +2,7 @@
 
 All notable changes to the BreachSpider MCP server. This project follows [Semantic Versioning](https://semver.org/).
 
-## 0.3.0 (unreleased)
+## 0.3.0 (2026-11-08)
 
 ### Added
 - `build_server(hosted=True, server_kwargs=...)`: the profile for the hosted server at mcp.breachspider.com. Same
