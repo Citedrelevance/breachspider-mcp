@@ -22,6 +22,17 @@ DEMO_NOTICE = "demo mode: public example access only"
 
 CORRELATE_PATH = "/api/v1/assets/correlate-cves"
 CHECK_PATH = "/api/v1/assets/correlate-cves/check"
+#: Device calls take about 0.2 s per distinct device server-side (200 distinct devices ~40 s): 90 s, under
+#: Cloudflare's 100 s. A timeout comes back as action reduce_batch with max 50 (SDK RequestTimeoutError).
+DEVICE_CALL_TIMEOUT = 90.0
+
+
+def _accepts_timeout(client) -> bool:
+    import inspect
+    try:
+        return "timeout" in inspect.signature(client.request).parameters
+    except (TypeError, ValueError):
+        return False
 BATCH_PATH = "/api/v1/batches"
 
 
@@ -80,6 +91,8 @@ class API:
             kw["params"] = params
         if headers:
             kw["headers"] = headers
+        if path in (CORRELATE_PATH, CHECK_PATH) and _accepts_timeout(client):
+            kw["timeout"] = DEVICE_CALL_TIMEOUT       # lab report 2026-11-12: 68 devices hit the SDK's 30 s default
         try:
             return client.request(method, path, **kw)
         except bs_exc.AuthenticationError as e:

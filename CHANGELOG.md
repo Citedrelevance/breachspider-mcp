@@ -2,6 +2,18 @@
 
 All notable changes to the BreachSpider MCP server. This project follows [Semantic Versioning](https://semver.org/).
 
+## 0.3.1 (2026-11-12)
+
+### Fixed
+- `check_changes` and `correlate_devices` wait up to 90 s for the API (the SDK default 30 s failed check_changes calls
+  of about 68 or more devices). A timeout now returns `retry_guidance` with `action: reduce_batch` and `max: 50`, and
+  the agent is told to split the list into batches of at most 50 instead of retrying it unchanged.
+- The tool description and server instructions state the real cost: about 0.2 s per distinct device, so 200 distinct
+  devices take about 40 s.
+
+### Changed
+- Requires `breachspider>=0.5.1`.
+
 ## 0.3.0 (2026-11-08)
 
 ### Added

@@ -64,7 +64,9 @@ inventory says. No CPE is needed.
 * Report needs_review and partial coverage honestly. Never call an empty, unresolved or partial result clean; \
 repeat the assessment field in your answer.
 * When explaining a finding, cite the affected_range source and the vendor advisory.
-* Use check_changes for repeat checks of devices you already have a result_hash for. It is much cheaper. Send \
+* Use check_changes for repeat checks of devices you already have a result_hash for. It is much cheaper. It \
+takes about 0.2 seconds per distinct device (identical devices count once), so 200 distinct devices take about 40 \
+seconds; if a call times out, send batches of at most 50. Send \
 the status_hash and status_facts you kept too: a status can change (a CVE becomes known-exploited, an end of support \
 date is published, new firmware ships) while the findings stay the same.
 * Use check_windows_host for Windows machines (OS product, edition, build, architecture, installed updates). \
@@ -90,7 +92,8 @@ HOSTED_RULE = ("* Never send host names, IP or MAC addresses, serial numbers, em
                "names. This server refuses them, names the field and the reason, and sends nothing; send a neutral "
                "asset_id such as PLC-01 instead.\n"
                "* Per call: at most 25 devices for correlate_devices, 5 hosts for check_windows_host and 200 devices "
-               "for check_changes. For more devices use submit_device_batch.\n")
+               "for check_changes (about 0.2 s per distinct device: 200 distinct devices take about 40 s; after a "
+               "timeout send batches of at most 50). For more devices use submit_device_batch.\n")
 
 _READ_ONLY = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True)
 
@@ -321,7 +324,7 @@ def build_server(api: Optional[API] = None, *, hosted: bool = False,
         ),
     )
     async def check_changes(
-        assets: Annotated[List[DH], Field(min_length=1, description="Devices with the result_hash from an earlier correlate_devices call." + (f" At most {cap_chk} per call." if cap_chk else ""), json_schema_extra={"maxItems": cap_chk} if cap_chk else None)],
+        assets: Annotated[List[DH], Field(min_length=1, description="Devices with the result_hash from an earlier correlate_devices call." + (f" At most {cap_chk} per call." if cap_chk else "") + " About 0.2 s per distinct device (200 distinct devices take about 40 s); after a timeout send batches of at most 50.", json_schema_extra={"maxItems": cap_chk} if cap_chk else None)],
     ) -> Dict[str, Any]:
         if cap_chk and len(assets) > cap_chk:
             raise _fail(f"Too many devices: {len(assets)} sent, at most {cap_chk} per call. Split the list into "

@@ -279,3 +279,20 @@ def test_descriptions_say_never_retry_when_not_retryable(keyed_server):
     for t in list_tools(keyed_server):
         assert "never retry when retryable is false" in t.description, t.name
     assert "Never retry when retryable is false" in INSTRUCTIONS
+
+
+def test_check_changes_timeout_says_split_into_50(keyed_server, mocked):
+    """Lab report 2026-11-12: 68 devices failed on the client timeout and the agent got no usable guidance."""
+    mocked.add(responses.POST, CHECK, body=requests.exceptions.ReadTimeout("read timed out"))
+    args = {"assets": [{"asset_id": f"PLC-{i:02d}", "vendor": "Moxa", "product": "EDS-518A", "version": "3.5",
+                        "result_hash": "sha256:" + "0" * 64} for i in range(68)]}
+    err, msg = call(keyed_server, "check_changes", args)
+    assert err and TEST_KEY not in msg
+    assert "batches of at most 50" in msg
+    g = _json.loads(msg.split("retry_guidance: ", 1)[1])
+    assert g["retryable"] is False and g["action"] == "reduce_batch" and g["max"] == 50
+    assert len([c for c in mocked.calls if c.request.url == CHECK]) == 1          # never re-sent unchanged
+
+
+def test_check_changes_documents_its_real_cost():
+    assert "0.2 seconds per distinct device" in INSTRUCTIONS
